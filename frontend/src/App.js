@@ -173,6 +173,9 @@ const RealWaveCanvas = ({
     const totalRatio = timeframe.quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
     let currentX = offsetX;
 
+    // Track key aspect positions for correct placement
+    const aspectPositions = [];
+
     for (let quarter = 0; quarter < 4; quarter++) {
       const ratio = timeframe.quadrantRatios[quarter];
       const quarterWidth = (ratio / totalRatio) * CANVAS_PX;
@@ -205,17 +208,31 @@ const RealWaveCanvas = ({
       path.setAttribute('fill', 'none');
       svg.appendChild(path);
 
-      // Draw aspect points (colored circles)
-      drawAspectPoint(svg, currentX, CENTER_Y, ASPECT_COLORS[quarter], isMain); // Start of quarter
-      
-      if (quarter === 1 || quarter === 3) {
-        // Peak/trough points
-        const peakY = quarter === 1 ? CENTER_Y - radius : CENTER_Y + radius;
-        drawAspectPoint(svg, centerX, peakY, ASPECT_COLORS[(quarter + 3) % 4], isMain);
+      // Store correct aspect positions
+      if (quarter === 0) {
+        // Magenta (0°) - start of wave
+        aspectPositions.push({ x: currentX, y: CENTER_Y, color: ASPECT_COLORS[0] });
+      } else if (quarter === 1) {
+        // Red (90°) - peak of first upper arc
+        aspectPositions.push({ x: centerX, y: CENTER_Y - radius, color: ASPECT_COLORS[1] });
+      } else if (quarter === 2) {
+        // Green (180°) - crossing center line
+        aspectPositions.push({ x: currentX, y: CENTER_Y, color: ASPECT_COLORS[2] });
+      } else if (quarter === 3) {
+        // Blue (270°) - bottom of lower arc
+        aspectPositions.push({ x: centerX, y: CENTER_Y + radius, color: ASPECT_COLORS[3] });
       }
 
       currentX = endX;
     }
+
+    // Add final Magenta (360°) - end of wave
+    aspectPositions.push({ x: currentX, y: CENTER_Y, color: ASPECT_COLORS[0] });
+
+    // Draw all aspect points at correct positions
+    aspectPositions.forEach(aspect => {
+      drawAspectPoint(svg, aspect.x, aspect.y, aspect.color, isMain);
+    });
   };
 
   // Draw aspect point (colored circle)
