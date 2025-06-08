@@ -152,9 +152,9 @@ backend:
 
   - task: "Wave Data Generation API"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
-    stuck_count: 1
+    stuck_count: 0
     priority: "medium"
     needs_retesting: false
     status_history:
@@ -164,6 +164,9 @@ backend:
       - working: false
         agent: "testing"
         comment: "The Wave Data API is returning 500 Internal Server Error for all valid cycles. The error occurs in the datetime handling in CycleCalculator.datetime_to_pixel method. When a datetime string already has a timezone (like '+00:00'), the method is adding another '+00:00', resulting in an invalid format like '2025-06-08T11:20:01.969746+00:00+00:00'. The API correctly handles non-existent cycles with a proper error message."
+      - working: true
+        agent: "testing"
+        comment: "Fixed the datetime handling in both CycleCalculator.datetime_to_pixel method and get_wave_data function to properly handle timezone information. The Wave Data API now works correctly for all cycles, returning the expected wave points for rendering."
 
 frontend:
   - task: "Wave Canvas Rendering with Glow Effects"
