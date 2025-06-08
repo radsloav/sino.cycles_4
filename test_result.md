@@ -246,3 +246,5 @@ test_plan:
 agent_communication:
   - agent: "main"
     message: "Implemented complete SiNo time visualization app with 6 preset cycles, sophisticated DateTime↔pixel conversion algorithm, Canvas-based wave rendering with glow effects, drag navigation, and multi-layer management. Backend includes all necessary APIs for cycle data, current time positioning, and wave generation. Frontend has grey background with glowy aesthetic as requested. Ready for comprehensive testing of core functionality."
+  - agent: "testing"
+    message: "Completed comprehensive testing of the backend APIs. The Core DateTime to Pixel Conversion Algorithm, Cycles API, and Current Time Positioning API are all working correctly. However, the Wave Data Generation API is failing with 500 Internal Server Error due to a bug in datetime handling. The issue is in the CycleCalculator.datetime_to_pixel method where it's incorrectly handling timezone information, resulting in invalid datetime strings. This needs to be fixed for the Wave Data API to work properly."
