@@ -206,6 +206,9 @@ const RealWaveCanvas = ({
     // Draw current date indicator
     drawCurrentTimeIndicator(svg, timeframe);
 
+    // Draw vertical cursor if active
+    drawVerticalCursor(svg);
+
     // Update current visible date
     const visibleDate = getCurrentVisibleDate();
     onDateChange && onDateChange(visibleDate);
