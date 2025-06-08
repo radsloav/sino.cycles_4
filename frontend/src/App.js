@@ -603,6 +603,8 @@ function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentVisibleDate, setCurrentVisibleDate] = useState(new Date());
   const [translateX, setTranslateX] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const [selectedCycles, setSelectedCycles] = useState(['Lunar Month', 'Solar Day']); // Default nested cycles
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -612,19 +614,12 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Pinch zoom for timeframe switching
-  const handlePinchZoom = (scale) => {
-    const currentIndex = TIMEFRAMES.findIndex(tf => tf.name === activeTimeframe);
-    
-    if (scale > 1.3 && currentIndex < TIMEFRAMES.length - 1) {
-      // Zoom in = shorter timeframe
-      setActiveTimeframe(TIMEFRAMES[currentIndex + 1].name);
-      setTranslateX(0);
-    } else if (scale < 0.7 && currentIndex > 0) {
-      // Zoom out = longer timeframe  
-      setActiveTimeframe(TIMEFRAMES[currentIndex - 1].name);
-      setTranslateX(0);
-    }
+  const handleCycleToggle = (cycleName) => {
+    setSelectedCycles(prev => 
+      prev.includes(cycleName) 
+        ? prev.filter(name => name !== cycleName)
+        : [...prev, cycleName]
+    );
   };
 
   const handleTimeFrameChange = (newTimeFrame) => {
@@ -633,16 +628,30 @@ function App() {
   };
 
   const handleDrag = (deltaX) => {
-    setTranslateX(prev => Math.max(0, prev - deltaX));
+    setTranslateX(prev => prev - deltaX); // Allow negative for past navigation
   };
 
   const handleArrowJump = (direction) => {
     const CYCLE_PX = 1460;
-    setTranslateX(prev => Math.max(0, prev + (direction * CYCLE_PX)));
+    setTranslateX(prev => prev + (direction * CYCLE_PX));
   };
 
   const handleDateChange = (newDate) => {
     setCurrentVisibleDate(newDate);
+  };
+
+  const handleDoubleClick = (svgX) => {
+    // Calculate date at cursor position
+    const timeframe = TIMEFRAMES.find(tf => tf.name === activeTimeframe);
+    if (timeframe) {
+      const cursorPixel = translateX + svgX;
+      const phase0 = new Date(timeframe.phase0);
+      const cycleProgress = (cursorPixel % 1460) / 1460;
+      const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
+      const deltaMs = cycleProgress * periodMs;
+      const cursorDate = new Date(phase0.getTime() + deltaMs);
+      setCurrentVisibleDate(cursorDate);
+    }
   };
 
   const formatVisibleDate = () => {
@@ -660,8 +669,24 @@ function App() {
     });
   };
 
+  // Get available cycles for settings (shorter than active timeframe)
+  const getAvailableCycles = () => {
+    const activeTimeframePeriod = TIMEFRAMES.find(tf => tf.name === activeTimeframe)?.periodDays || 365;
+    return TIMEFRAMES.filter(tf => tf.periodDays < activeTimeframePeriod && tf.name !== activeTimeframe);
+  };
+
   return (
     <div className="App">
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        availableCycles={getAvailableCycles()}
+        selectedCycles={selectedCycles}
+        onCycleToggle={handleCycleToggle}
+        onCreateCustom={() => console.log('Create custom cycle')}
+      />
+
       {/* Header */}
       <header className="app-header">
         <div className="header-left">
@@ -702,8 +727,10 @@ function App() {
             activeTimeframe={activeTimeframe}
             currentDate={currentDate}
             translateX={translateX}
+            selectedCycles={selectedCycles}
             onDrag={handleDrag}
             onDateChange={handleDateChange}
+            onDoubleClick={handleDoubleClick}
             onTap={(x) => console.log('Tap at:', x)}
             onLongPress={(x) => console.log('Long press at:', x)}
           />
@@ -726,7 +753,7 @@ function App() {
 
       {/* Right Sidebar */}
       <RightSidebar
-        onSettings={() => console.log('Settings')}
+        onSettings={() => setShowSettings(true)}
         onProfile={() => console.log('Profile')}
       />
     </div>
