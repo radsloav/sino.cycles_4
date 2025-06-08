@@ -13,197 +13,339 @@ const SiNoLogo = () => (
   </div>
 );
 
-// Quarter-Arc Wave Renderer Component
-const WaveCanvas = ({ cycles, activeCycle, currentDate, translateX, onDrag, onTap, onLongPress }) => {
+// Timeframe definitions with real astronomical data
+const TIMEFRAMES = [
+  {
+    name: 'Great Year',
+    periodDays: 25920 * 365.2422,
+    phase0: '2000-03-20T00:00:00Z', // Vernal Equinox 2000
+    strokeMain: 6,
+    quadrantRatios: [6480, 6480, 6480, 6480] // years
+  },
+  {
+    name: 'Solar Year', 
+    periodDays: 365.2422,
+    phase0: '2025-03-20T00:00:00Z', // Vernal Equinox 2025
+    strokeMain: 4,
+    quadrantRatios: [93, 92, 89, 91] // days (Spring, Summer, Autumn, Winter)
+  },
+  {
+    name: 'Lunar Month',
+    periodDays: 29.530589,
+    phase0: '2025-03-16T17:10:00Z', // First Quarter March 2025
+    strokeMain: 3,
+    quadrantRatios: [7.38, 7.38, 7.38, 7.38] // days
+  },
+  {
+    name: 'Solar Day',
+    periodDays: 1.0,
+    phase0: '2025-01-01T06:00:00Z', // Sunrise epoch
+    strokeMain: 2,
+    quadrantRatios: [6, 6, 6, 6] // hours
+  }
+];
+
+// Real astronomical Wave Renderer Component
+const RealWaveCanvas = ({ 
+  activeTimeframe, 
+  currentDate, 
+  translateX, 
+  onDrag, 
+  onTap, 
+  onLongPress,
+  onDateChange 
+}) => {
   const svgRef = useRef(null);
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, time: 0 });
   const longPressTimer = useRef(null);
 
-  const CYCLE_PX = 1460;
+  const CANVAS_PX = 1460; // Android reference width
   const CANVAS_WIDTH = 1200;
   const CANVAS_HEIGHT = 400;
   const CENTER_Y = CANVAS_HEIGHT / 2;
   
-  // Quadrant colors (M-R-G-B)
-  const QUADRANT_COLORS = ['#FF0080', '#FF4444', '#00FF44', '#0080FF'];
+  // Aspect colors (M-R-G-B for 0°-90°-180°-270°)
+  const ASPECT_COLORS = ['#FF0080', '#FF4444', '#00FF44', '#0080FF'];
 
-  // Calculate current timeframe epoch and period
+  // Get active timeframe data
   const getActiveTimeframe = () => {
-    const active = cycles.find(c => c.name === activeCycle);
-    if (!active) return null;
-    
-    return {
-      epoch: new Date(active.epoch),
-      periodDays: active.period_days,
-      quadrantRatios: active.quadrant_ratios,
-      color: active.color,
-      name: active.name
-    };
+    return TIMEFRAMES.find(tf => tf.name === activeTimeframe) || TIMEFRAMES[1];
   };
 
-  // Convert date to pixel position
+  // Convert date to pixel position within timeframe
   const dateToPixel = (date, timeframe) => {
-    if (!timeframe) return 0;
-    
-    const deltaMs = date.getTime() - timeframe.epoch.getTime();
+    const phase0 = new Date(timeframe.phase0);
+    const deltaMs = date.getTime() - phase0.getTime();
     const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
     
-    // Handle negative dates (before epoch)
-    const normalizedDelta = deltaMs >= 0 ? deltaMs : deltaMs + Math.ceil(Math.abs(deltaMs) / periodMs) * periodMs;
-    const cycleProgress = (normalizedDelta % periodMs) / periodMs;
+    // Handle cycling (positive and negative time)
+    let normalizedDelta = deltaMs;
+    if (deltaMs < 0) {
+      const cyclesBefore = Math.ceil(Math.abs(deltaMs) / periodMs);
+      normalizedDelta = deltaMs + (cyclesBefore * periodMs);
+    }
     
-    return cycleProgress * CYCLE_PX;
+    const cycleProgress = (normalizedDelta % periodMs) / periodMs;
+    return cycleProgress * CANVAS_PX;
   };
 
   // Convert pixel to date
   const pixelToDate = (pixel, timeframe) => {
-    if (!timeframe) return new Date();
-    
-    const cycleProgress = pixel / CYCLE_PX;
+    const phase0 = new Date(timeframe.phase0);
+    const cycleProgress = pixel / CANVAS_PX;
     const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
     const deltaMs = cycleProgress * periodMs;
     
-    return new Date(timeframe.epoch.getTime() + deltaMs);
+    return new Date(phase0.getTime() + deltaMs);
   };
 
-  // Draw quarter-arc wave
+  // Calculate current visible date based on center position
+  const getCurrentVisibleDate = () => {
+    const timeframe = getActiveTimeframe();
+    const centerPixel = translateX + (CANVAS_WIDTH / 2);
+    return pixelToDate(centerPixel, timeframe);
+  };
+
+  // Draw quarter-arc wave with proper quadrant ratios
   const drawQuarterArcWave = () => {
     const svg = svgRef.current;
     if (!svg) return;
 
     // Clear previous content
     svg.innerHTML = '';
-
-    const timeframe = getActiveTimeframe();
-    if (!timeframe) return;
-
-    // Create SVG defs for glow effects
-    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
     
+    const timeframe = getActiveTimeframe();
+
     // Create glow filter
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
     const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
-    filter.setAttribute('id', 'glow');
+    filter.setAttribute('id', 'aspectGlow');
     filter.setAttribute('x', '-50%');
     filter.setAttribute('y', '-50%');
     filter.setAttribute('width', '200%');
     filter.setAttribute('height', '200%');
     
-    const feMorphology = document.createElementNS('http://www.w3.org/2000/svg', 'feMorphology');
-    feMorphology.setAttribute('operator', 'dilate');
-    feMorphology.setAttribute('radius', '2');
-    feMorphology.setAttribute('in', 'SourceGraphic');
-    feMorphology.setAttribute('result', 'thicken');
-    
     const feGaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
-    feGaussianBlur.setAttribute('in', 'thicken');
+    feGaussianBlur.setAttribute('in', 'SourceGraphic');
     feGaussianBlur.setAttribute('stdDeviation', '3');
-    feGaussianBlur.setAttribute('result', 'colored');
     
-    const feMerge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
-    const feMergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
-    feMergeNode1.setAttribute('in', 'colored');
-    const feMergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
-    feMergeNode2.setAttribute('in', 'SourceGraphic');
-    
-    feMerge.appendChild(feMergeNode1);
-    feMerge.appendChild(feMergeNode2);
-    
-    filter.appendChild(feMorphology);
     filter.appendChild(feGaussianBlur);
-    filter.appendChild(feMerge);
     defs.appendChild(filter);
     svg.appendChild(defs);
 
-    // Calculate visible cycles based on current position and translation
+    // Draw center axis line
+    const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    centerLine.setAttribute('x1', 0);
+    centerLine.setAttribute('y1', CENTER_Y);
+    centerLine.setAttribute('x2', CANVAS_WIDTH);
+    centerLine.setAttribute('y2', CENTER_Y);
+    centerLine.setAttribute('stroke', '#CCCCCC');
+    centerLine.setAttribute('stroke-width', '1');
+    centerLine.setAttribute('stroke-dasharray', '5,5');
+    svg.appendChild(centerLine);
+
+    // Calculate visible cycles
     const viewStartPixel = translateX;
     const viewEndPixel = translateX + CANVAS_WIDTH;
+    const cyclesToDraw = Math.ceil(CANVAS_WIDTH / CANVAS_PX) + 2;
+    const startCycle = Math.floor(viewStartPixel / CANVAS_PX) - 1;
     
-    // Draw multiple complete cycles to ensure continuous view
-    const cyclesToDraw = Math.ceil(CANVAS_WIDTH / CYCLE_PX) + 2;
-    const startCycle = Math.floor(viewStartPixel / CYCLE_PX) - 1;
-    
+    // Draw main timeframe wave(s)
     for (let cycleIndex = startCycle; cycleIndex < startCycle + cyclesToDraw; cycleIndex++) {
-      const cycleOffsetX = cycleIndex * CYCLE_PX;
-      drawSingleCycle(svg, timeframe, cycleOffsetX - translateX);
+      const cycleOffsetX = cycleIndex * CANVAS_PX;
+      drawMainWave(svg, timeframe, cycleOffsetX - translateX, true);
     }
 
-    // Draw current time indicator
-    if (currentDate) {
-      const currentPixel = dateToPixel(currentDate, timeframe) - translateX;
-      const indicatorX = currentPixel % CYCLE_PX;
-      
-      if (indicatorX >= 0 && indicatorX <= CANVAS_WIDTH) {
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', indicatorX);
-        line.setAttribute('y1', 50);
-        line.setAttribute('x2', indicatorX);
-        line.setAttribute('y2', CANVAS_HEIGHT - 50);
-        line.setAttribute('stroke', '#FFFFFF');
-        line.setAttribute('stroke-width', '2');
-        line.setAttribute('filter', 'url(#glow)');
-        svg.appendChild(line);
-        
-        // Current time dot
-        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        dot.setAttribute('cx', indicatorX);
-        dot.setAttribute('cy', CENTER_Y);
-        dot.setAttribute('r', '6');
-        dot.setAttribute('fill', '#FFFFFF');
-        dot.setAttribute('filter', 'url(#glow)');
-        svg.appendChild(dot);
-      }
-    }
+    // Draw nested shorter cycles
+    drawNestedWaves(svg, timeframe);
+
+    // Draw current date indicator
+    drawCurrentTimeIndicator(svg, timeframe);
+
+    // Update current visible date
+    const visibleDate = getCurrentVisibleDate();
+    onDateChange && onDateChange(visibleDate);
   };
 
-  // Draw single cycle using quarter-arcs
-  const drawSingleCycle = (svg, timeframe, offsetX) => {
-    const quarterWidth = CYCLE_PX / 4; // 365px per quarter
-    const radius = quarterWidth / 2; // 182.5px radius
-    
-    // Draw each quarter as an arc
+  // Draw single main wave using quarter-arcs with quadrant ratios
+  const drawMainWave = (svg, timeframe, offsetX, isMain = false) => {
+    const totalRatio = timeframe.quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
+    let currentX = offsetX;
+
     for (let quarter = 0; quarter < 4; quarter++) {
-      const startX = offsetX + (quarter * quarterWidth);
-      const endX = startX + quarterWidth;
-      
+      const ratio = timeframe.quadrantRatios[quarter];
+      const quarterWidth = (ratio / totalRatio) * CANVAS_PX;
+      const radius = quarterWidth / 2;
+      const endX = currentX + quarterWidth;
+
       // Skip if not visible
-      if (endX < 0 || startX > CANVAS_WIDTH) continue;
-      
-      const centerX = startX + radius;
-      const color = QUADRANT_COLORS[quarter];
-      
+      if (endX < -50 || currentX > CANVAS_WIDTH + 50) {
+        currentX = endX;
+        continue;
+      }
+
+      const centerX = currentX + radius;
+
       // Create quarter arc path
       let pathData;
       if (quarter === 0 || quarter === 2) {
         // Upper arcs (0-90°, 180-270°)
-        pathData = `M ${startX} ${CENTER_Y} A ${radius} ${radius} 0 0 1 ${endX} ${CENTER_Y}`;
+        pathData = `M ${currentX} ${CENTER_Y} A ${radius} ${radius} 0 0 1 ${endX} ${CENTER_Y}`;
       } else {
-        // Lower arcs (90-180°, 270-360°) 
-        pathData = `M ${startX} ${CENTER_Y} A ${radius} ${radius} 0 0 0 ${endX} ${CENTER_Y}`;
+        // Lower arcs (90-180°, 270-360°)
+        pathData = `M ${currentX} ${CENTER_Y} A ${radius} ${radius} 0 0 0 ${endX} ${CENTER_Y}`;
       }
-      
+
+      // Draw the wave segment (grey)
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', pathData);
-      path.setAttribute('stroke', color);
-      path.setAttribute('stroke-width', timeframe.name === activeCycle ? '4' : '2');
+      path.setAttribute('stroke', '#999999');
+      path.setAttribute('stroke-width', isMain ? timeframe.strokeMain : timeframe.strokeMain * 0.6);
       path.setAttribute('fill', 'none');
-      path.setAttribute('filter', 'url(#glow)');
       svg.appendChild(path);
+
+      // Draw aspect points (colored circles)
+      drawAspectPoint(svg, currentX, CENTER_Y, ASPECT_COLORS[quarter], isMain); // Start of quarter
       
-      // Add quadrant marker dots
-      const markerDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      markerDot.setAttribute('cx', quarter === 1 || quarter === 3 ? centerX : startX);
-      markerDot.setAttribute('cy', quarter === 0 || quarter === 2 ? CENTER_Y - radius : CENTER_Y + radius);
-      markerDot.setAttribute('r', '4');
-      markerDot.setAttribute('fill', color);
-      markerDot.setAttribute('filter', 'url(#glow)');
-      svg.appendChild(markerDot);
+      if (quarter === 1 || quarter === 3) {
+        // Peak/trough points
+        const peakY = quarter === 1 ? CENTER_Y - radius : CENTER_Y + radius;
+        drawAspectPoint(svg, centerX, peakY, ASPECT_COLORS[(quarter + 3) % 4], isMain);
+      }
+
+      currentX = endX;
     }
+  };
+
+  // Draw aspect point (colored circle)
+  const drawAspectPoint = (svg, x, y, color, isMain) => {
+    if (x < -20 || x > CANVAS_WIDTH + 20) return;
+    
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', x);
+    circle.setAttribute('cy', y);
+    circle.setAttribute('r', isMain ? '6' : '4');
+    circle.setAttribute('fill', color);
+    circle.setAttribute('filter', 'url(#aspectGlow)');
+    svg.appendChild(circle);
+  };
+
+  // Draw nested shorter cycles
+  const drawNestedWaves = (svg, mainTimeframe) => {
+    // Find shorter timeframes to display
+    const shorterTFs = TIMEFRAMES.filter(tf => 
+      tf.periodDays < mainTimeframe.periodDays && tf.name !== mainTimeframe.name
+    );
+
+    shorterTFs.forEach((nestedTF, index) => {
+      // Calculate how many nested cycles fit in the main cycle
+      const cyclesPerMain = mainTimeframe.periodDays / nestedTF.periodDays;
+      const nestedCyclePx = CANVAS_PX / cyclesPerMain;
+
+      if (nestedCyclePx < 20) return; // Skip if too small to render
+
+      // Draw multiple nested cycles
+      const viewStartPixel = translateX;
+      const viewEndPixel = translateX + CANVAS_WIDTH;
+      const nestedCyclesToDraw = Math.ceil(CANVAS_WIDTH / nestedCyclePx) + 2;
+      const startNestedCycle = Math.floor(viewStartPixel / nestedCyclePx) - 1;
+
+      for (let cycleIndex = startNestedCycle; cycleIndex < startNestedCycle + nestedCyclesToDraw; cycleIndex++) {
+        const cycleOffsetX = cycleIndex * nestedCyclePx;
+        
+        // Scale the nested wave to fit its cycle length
+        const scaledTF = {
+          ...nestedTF,
+          strokeMain: nestedTF.strokeMain * 0.7
+        };
+        
+        drawScaledWave(svg, scaledTF, cycleOffsetX - translateX, nestedCyclePx, index + 1);
+      }
+    });
+  };
+
+  // Draw scaled nested wave
+  const drawScaledWave = (svg, timeframe, offsetX, scalePx, nestLevel) => {
+    const totalRatio = timeframe.quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
+    let currentX = offsetX;
+    const verticalOffset = nestLevel * 20; // Offset nested waves vertically
+
+    for (let quarter = 0; quarter < 4; quarter++) {
+      const ratio = timeframe.quadrantRatios[quarter];
+      const quarterWidth = (ratio / totalRatio) * scalePx;
+      const radius = quarterWidth / 2;
+      const endX = currentX + quarterWidth;
+
+      if (endX < -50 || currentX > CANVAS_WIDTH + 50) {
+        currentX = endX;
+        continue;
+      }
+
+      const adjustedCenterY = CENTER_Y + (nestLevel % 2 === 1 ? verticalOffset : -verticalOffset);
+
+      let pathData;
+      if (quarter === 0 || quarter === 2) {
+        pathData = `M ${currentX} ${adjustedCenterY} A ${radius} ${radius} 0 0 1 ${endX} ${adjustedCenterY}`;
+      } else {
+        pathData = `M ${currentX} ${adjustedCenterY} A ${radius} ${radius} 0 0 0 ${endX} ${adjustedCenterY}`;
+      }
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', pathData);
+      path.setAttribute('stroke', '#BBBBBB');
+      path.setAttribute('stroke-width', Math.max(1, timeframe.strokeMain * 0.5));
+      path.setAttribute('fill', 'none');
+      path.setAttribute('opacity', '0.7');
+      svg.appendChild(path);
+
+      currentX = endX;
+    }
+  };
+
+  // Draw current time indicator
+  const drawCurrentTimeIndicator = (svg, timeframe) => {
+    if (!currentDate) return;
+
+    const currentPixel = dateToPixel(currentDate, timeframe) - translateX;
+    
+    // Handle cycling - show indicator if within visible area
+    const visiblePositions = [];
+    for (let cycle = -1; cycle <= 2; cycle++) {
+      const pos = currentPixel + (cycle * CANVAS_PX);
+      if (pos >= -10 && pos <= CANVAS_WIDTH + 10) {
+        visiblePositions.push(pos);
+      }
+    }
+
+    visiblePositions.forEach(indicatorX => {
+      // Current time line
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', indicatorX);
+      line.setAttribute('y1', 50);
+      line.setAttribute('x2', indicatorX);
+      line.setAttribute('y2', CANVAS_HEIGHT - 50);
+      line.setAttribute('stroke', '#FF6B35');
+      line.setAttribute('stroke-width', '2');
+      line.setAttribute('filter', 'url(#aspectGlow)');
+      svg.appendChild(line);
+      
+      // Current time dot
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', indicatorX);
+      dot.setAttribute('cy', CENTER_Y);
+      dot.setAttribute('r', '8');
+      dot.setAttribute('fill', '#FF6B35');
+      dot.setAttribute('stroke', '#FFFFFF');
+      dot.setAttribute('stroke-width', '2');
+      dot.setAttribute('filter', 'url(#aspectGlow)');
+      svg.appendChild(dot);
+    });
   };
 
   useEffect(() => {
     drawQuarterArcWave();
-  }, [cycles, activeCycle, currentDate, translateX]);
+  }, [activeTimeframe, currentDate, translateX]);
 
   // Touch/Mouse handlers
   const handleStart = (e) => {
@@ -211,7 +353,6 @@ const WaveCanvas = ({ cycles, activeCycle, currentDate, translateX, onDrag, onTa
     const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
     dragStart.current = { x: clientX, time: Date.now() };
     
-    // Long press detection
     longPressTimer.current = setTimeout(() => {
       if (isDragging.current) {
         onLongPress && onLongPress(clientX);
@@ -236,7 +377,6 @@ const WaveCanvas = ({ cycles, activeCycle, currentDate, translateX, onDrag, onTa
     isDragging.current = false;
     clearTimeout(longPressTimer.current);
     
-    // Check for tap (short duration, small movement)
     const duration = Date.now() - dragStart.current.time;
     if (duration < 200) {
       const clientX = e.type.includes('touch') ? e.changedTouches[0].clientX : e.clientX;
@@ -263,30 +403,36 @@ const WaveCanvas = ({ cycles, activeCycle, currentDate, translateX, onDrag, onTa
   );
 };
 
-// Timeline Axis Component
-const TimelineAxis = ({ activeCycle, currentDate, translateX, cycles }) => {
-  const getActiveTimeframe = () => {
-    return cycles.find(c => c.name === activeCycle);
+// Real Timeline Axis Component
+const RealTimelineAxis = ({ activeTimeframe, currentVisibleDate, translateX }) => {
+  const getTimeframe = () => {
+    return TIMEFRAMES.find(tf => tf.name === activeTimeframe) || TIMEFRAMES[1];
   };
 
-  const generateTimeMarkers = () => {
-    const timeframe = getActiveTimeframe();
-    if (!timeframe) return [];
-
+  const generateRealTimeMarkers = () => {
+    const timeframe = getTimeframe();
     const markers = [];
-    const CYCLE_PX = 1460;
-    const epoch = new Date(timeframe.epoch);
+    const CANVAS_PX = 1460;
     
-    // For Solar Year - show months
-    if (activeCycle === 'Solar Year') {
+    // Generate markers based on timeframe
+    if (activeTimeframe === 'Solar Year') {
+      // Show months from March to March (following solar year)
+      const startDate = new Date(timeframe.phase0);
+      
       for (let month = 0; month < 12; month++) {
-        const monthDate = new Date(epoch.getFullYear(), epoch.getMonth() + month, 1);
-        const pixelPos = (month / 12) * CYCLE_PX;
+        const monthDate = new Date(startDate);
+        monthDate.setMonth(startDate.getMonth() + month);
+        
+        // Calculate pixel position based on actual date
+        const phase0 = new Date(timeframe.phase0);
+        const deltaMs = monthDate.getTime() - phase0.getTime();
+        const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
+        const progress = (deltaMs % periodMs) / periodMs;
         
         markers.push({
           type: 'month',
           date: monthDate,
-          pixel: pixelPos,
+          pixel: progress * CANVAS_PX,
           label: monthDate.toLocaleDateString('en', { month: 'short' }).toLowerCase()
         });
       }
@@ -295,7 +441,7 @@ const TimelineAxis = ({ activeCycle, currentDate, translateX, cycles }) => {
     return markers;
   };
 
-  const markers = generateTimeMarkers();
+  const markers = generateRealTimeMarkers();
 
   return (
     <div className="timeline-axis">
@@ -304,14 +450,13 @@ const TimelineAxis = ({ activeCycle, currentDate, translateX, cycles }) => {
           <div
             key={index}
             className={`timeline-marker timeline-${marker.type}`}
-            style={{ left: `${marker.pixel - translateX}px` }}
+            style={{ left: `${marker.pixel - translateX + 100}px` }}
           >
             <div className="marker-tick"></div>
             <div className="marker-label">{marker.label}</div>
           </div>
         ))}
         
-        {/* Year indicators */}
         <div className="year-indicators">
           <span className="year-label">{'< 2025'}</span>
           <span className="year-label current">{'2026 >'}</span>
@@ -330,11 +475,7 @@ const RightSidebar = ({ onSettings, onProfile }) => {
       </button>
       
       <button className="sidebar-btn wave-btn">
-        <div className="btn-icon wave-icon">
-          <div className="wave-line"></div>
-          <div className="wave-line"></div>
-          <div className="wave-line"></div>
-        </div>
+        <div className="btn-icon wave-icon">S</div>
       </button>
       
       <button className="sidebar-btn profile-btn" onClick={onProfile}>
@@ -346,16 +487,12 @@ const RightSidebar = ({ onSettings, onProfile }) => {
 
 // Main App Component
 function App() {
-  const [cycles, setCycles] = useState([]);
-  const [activeCycle, setActiveCycle] = useState('Solar Year');
+  const [activeTimeframe, setActiveTimeframe] = useState('Solar Year');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentVisibleDate, setCurrentVisibleDate] = useState(new Date());
   const [translateX, setTranslateX] = useState(0);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadCycles();
-    
-    // Update current time every minute
     const interval = setInterval(() => {
       setCurrentDate(new Date());
     }, 60000);
@@ -363,25 +500,28 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  const loadCycles = async () => {
-    try {
-      const response = await fetch(`${API}/cycles`);
-      const cyclesData = await response.json();
-      setCycles(cyclesData);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading cycles:', error);
-      setLoading(false);
+  // Pinch zoom for timeframe switching
+  const handlePinchZoom = (scale) => {
+    const currentIndex = TIMEFRAMES.findIndex(tf => tf.name === activeTimeframe);
+    
+    if (scale > 1.3 && currentIndex < TIMEFRAMES.length - 1) {
+      // Zoom in = shorter timeframe
+      setActiveTimeframe(TIMEFRAMES[currentIndex + 1].name);
+      setTranslateX(0);
+    } else if (scale < 0.7 && currentIndex > 0) {
+      // Zoom out = longer timeframe  
+      setActiveTimeframe(TIMEFRAMES[currentIndex - 1].name);
+      setTranslateX(0);
     }
   };
 
   const handleTimeFrameChange = (newTimeFrame) => {
-    setActiveCycle(newTimeFrame);
-    setTranslateX(0); // Reset position when changing timeframe
+    setActiveTimeframe(newTimeFrame);
+    setTranslateX(0);
   };
 
   const handleDrag = (deltaX) => {
-    setTranslateX(prev => Math.max(0, prev - deltaX)); // Prevent negative scroll
+    setTranslateX(prev => Math.max(0, prev - deltaX));
   };
 
   const handleArrowJump = (direction) => {
@@ -389,47 +529,32 @@ function App() {
     setTranslateX(prev => Math.max(0, prev + (direction * CYCLE_PX)));
   };
 
-  const handleTap = (clientX) => {
-    // TODO: Show tooltip with date and phase info
-    console.log('Tap at:', clientX);
+  const handleDateChange = (newDate) => {
+    setCurrentVisibleDate(newDate);
   };
 
-  const handleLongPress = (clientX) => {
-    // TODO: Show vertical slider for precise navigation
-    console.log('Long press at:', clientX);
-  };
-
-  const formatDate = () => {
-    return currentDate.toLocaleDateString('sk-SK', { 
+  const formatVisibleDate = () => {
+    return currentVisibleDate.toLocaleDateString('sk-SK', { 
       day: '2-digit',
-      month: '2-digit',
+      month: '2-digit', 
       year: 'numeric'
     });
   };
 
-  const formatTime = () => {
-    return currentDate.toLocaleTimeString('sk-SK', { 
+  const formatVisibleTime = () => {
+    return currentVisibleDate.toLocaleTimeString('sk-SK', { 
       hour: '2-digit',
       minute: '2-digit'
     });
   };
-
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <SiNoLogo />
-        <div className="loading-spinner"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="App">
       {/* Header */}
       <header className="app-header">
         <div className="header-left">
-          <span className="date-badge">{formatDate()}</span>
-          <span className="time-badge">{formatTime()}</span>
+          <span className="date-badge">{formatVisibleDate()}</span>
+          <span className="time-badge">{formatVisibleTime()}</span>
         </div>
         
         <SiNoLogo />
@@ -438,12 +563,12 @@ function App() {
           <div className="moon-phase">🌓</div>
           <select 
             className="timeframe-select"
-            value={activeCycle}
+            value={activeTimeframe}
             onChange={(e) => handleTimeFrameChange(e.target.value)}
           >
-            {cycles.map(cycle => (
-              <option key={cycle.name} value={cycle.name}>
-                {cycle.name}
+            {TIMEFRAMES.map(tf => (
+              <option key={tf.name} value={tf.name}>
+                {tf.name}
               </option>
             ))}
           </select>
@@ -456,33 +581,34 @@ function App() {
           <button 
             className="nav-arrow nav-left"
             onClick={() => handleArrowJump(-1)}
+            title="Previous cycle"
           >
             ◁
           </button>
           
-          <WaveCanvas
-            cycles={cycles}
-            activeCycle={activeCycle}
+          <RealWaveCanvas
+            activeTimeframe={activeTimeframe}
             currentDate={currentDate}
             translateX={translateX}
             onDrag={handleDrag}
-            onTap={handleTap}
-            onLongPress={handleLongPress}
+            onDateChange={handleDateChange}
+            onTap={(x) => console.log('Tap at:', x)}
+            onLongPress={(x) => console.log('Long press at:', x)}
           />
           
           <button 
             className="nav-arrow nav-right"
             onClick={() => handleArrowJump(1)}
+            title="Next cycle"
           >
             ▷
           </button>
         </div>
         
-        <TimelineAxis
-          activeCycle={activeCycle}
-          currentDate={currentDate}
+        <RealTimelineAxis
+          activeTimeframe={activeTimeframe}
+          currentVisibleDate={currentVisibleDate}
           translateX={translateX}
-          cycles={cycles}
         />
       </main>
 
