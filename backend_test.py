@@ -272,25 +272,5 @@ if __name__ == "__main__":
     print("Starting SiNo Backend API Tests...")
     print(f"Testing against backend URL: {BACKEND_URL}")
     
-    # Run the tests in a specific order
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(SiNoBackendTests('test_cycles_api'))
-    test_suite.addTest(SiNoBackendTests('test_individual_cycle_api'))
-    test_suite.addTest(SiNoBackendTests('test_datetime_to_pixel_conversion'))
-    test_suite.addTest(SiNoBackendTests('test_current_time_api'))
-    test_suite.addTest(SiNoBackendTests('test_wave_data_api'))
-    
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(test_suite)
-    
-    # Print summary
-    print("\n=== Test Summary ===")
-    print(f"Total tests: {result.testsRun}")
-    print(f"Failures: {len(result.failures)}")
-    print(f"Errors: {len(result.errors)}")
-    print(f"Skipped: {len(result.skipped)}")
-    
-    if result.wasSuccessful():
-        print("\n✅ All tests passed successfully!")
-    else:
-        print("\n❌ Some tests failed. See details above.")
+    # Run the tests with higher verbosity to see more details
+    unittest.main(verbosity=2)
