@@ -230,16 +230,61 @@ class SiNoBackendTests(unittest.TestCase):
         """Test the /api/wave_data/{cycle_name} endpoint to verify wave point generation for rendering"""
         print("\n=== Testing Wave Data API ===")
         
-        # Test for a non-existent cycle first (this should work)
+        # Test for each cycle
+        cycle_names = ["great_year", "zodiac_age", "solar_year", "lunar_month", "solar_day", "hour"]
+        
+        for cycle_name in cycle_names:
+            with self.subTest(f"Testing wave data for {cycle_name}"):
+                # Test with default parameters
+                response = requests.get(f"{BACKEND_URL}/wave_data/{cycle_name}")
+                self.assertEqual(response.status_code, 200, f"Wave Data API should return 200 status code for {cycle_name}")
+                
+                result = response.json()
+                self.assertIn("cycle", result, "Result should contain cycle data")
+                self.assertIn("points", result, "Result should contain points array")
+                self.assertIn("cycle_px", result, "Result should contain cycle_px")
+                
+                # Verify cycle_px is 1460
+                self.assertEqual(result["cycle_px"], 1460, "cycle_px should be 1460")
+                
+                # Verify points structure
+                points = result["points"]
+                self.assertEqual(len(points), 30, "Default should return 30 days of points")
+                
+                for point in points:
+                    self.assertIn("date", point, "Point should have date")
+                    self.assertIn("x", point, "Point should have x position")
+                    self.assertIn("phase", point, "Point should have phase")
+                    self.assertIn("quadrant", point, "Point should have quadrant")
+                    
+                    # Verify x is within the 1460px cycle width
+                    self.assertGreaterEqual(point["x"], 0, "x should be >= 0")
+                    self.assertLessEqual(point["x"], 1460, "x should be <= 1460")
+                    
+                    # Verify phase is between 0 and 100
+                    self.assertGreaterEqual(point["phase"], 0, "phase should be >= 0")
+                    self.assertLessEqual(point["phase"], 100, "phase should be <= 100")
+                    
+                    # Verify quadrant is between 0 and 3
+                    self.assertGreaterEqual(point["quadrant"], 0, "quadrant should be >= 0")
+                    self.assertLessEqual(point["quadrant"], 3, "quadrant should be <= 3")
+                
+                # Test with custom parameters
+                custom_start = "2025-01-01T00:00:00Z"
+                custom_days = 10
+                response = requests.get(f"{BACKEND_URL}/wave_data/{cycle_name}?start_date={custom_start}&days={custom_days}")
+                self.assertEqual(response.status_code, 200, f"Wave Data API should return 200 status code for {cycle_name} with custom params")
+                
+                result = response.json()
+                points = result["points"]
+                self.assertEqual(len(points), custom_days, f"Should return {custom_days} days of points")
+        
+        # Test non-existent cycle
         response = requests.get(f"{BACKEND_URL}/wave_data/nonexistent_cycle")
         self.assertEqual(response.status_code, 200, "API should handle non-existent cycles gracefully")
         self.assertIn("error", response.json(), "Should return error for non-existent cycle")
         
-        print("Note: The wave_data API is returning 500 errors for valid cycles due to a bug in datetime handling.")
-        print("The error occurs when the API tries to replace 'Z' with '+00:00' in a datetime string that already has a timezone.")
-        print("This is a bug in the server implementation that needs to be fixed.")
-        
-        print("✅ Wave Data API test partially passed (non-existent cycle handling works)")
+        print("✅ Wave Data API test passed")
 
 if __name__ == "__main__":
     print("Starting SiNo Backend API Tests...")
