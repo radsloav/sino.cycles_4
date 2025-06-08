@@ -272,12 +272,19 @@ async def get_wave_data(cycle_name: str, start_date: str = None, days: int = 30)
         return {"error": "Cycle not found"}
     
     # Generate wave points
-    start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+    # Handle timezone information properly
+    if start_date.endswith('Z'):
+        start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+    elif '+' in start_date or '-' in start_date[10:]:  # Check if timezone info is already present
+        start_dt = datetime.fromisoformat(start_date)
+    else:
+        start_dt = datetime.fromisoformat(start_date + '+00:00')
+    
     points = []
     
     for day in range(days):
         dt = start_dt + timedelta(days=day)
-        dt_str = dt.isoformat() + 'Z'
+        dt_str = dt.isoformat().replace('+00:00', 'Z')  # Ensure consistent format
         position = CycleCalculator.datetime_to_pixel(dt_str, cycle)
         points.append({
             "date": dt_str,
