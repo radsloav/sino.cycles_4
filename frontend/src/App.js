@@ -506,6 +506,7 @@ const RealWaveCanvas = ({
         onMouseMove={handleMove}
         onMouseUp={handleEnd}
         onMouseLeave={handleEnd}
+        onDoubleClick={handleDoubleClick}
         onTouchStart={handleStart}
         onTouchMove={handleMove}
         onTouchEnd={handleEnd}
