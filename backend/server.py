@@ -125,7 +125,14 @@ class CycleCalculator:
     @staticmethod
     def datetime_to_pixel(dt_str: str, cycle: Dict[str, Any], cycle_px: int = 1460) -> Dict[str, float]:
         """Convert datetime to pixel position within cycle"""
-        dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+        # Handle timezone information properly
+        if dt_str.endswith('Z'):
+            dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+        elif '+' in dt_str or '-' in dt_str[10:]:  # Check if timezone info is already present
+            dt = datetime.fromisoformat(dt_str)
+        else:
+            dt = datetime.fromisoformat(dt_str + '+00:00')
+        
         epoch = datetime.fromisoformat(cycle['epoch'].replace('Z', '+00:00'))
         
         # Calculate delta in smallest units
