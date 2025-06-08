@@ -332,11 +332,13 @@ const RealWaveCanvas = ({
     });
   };
 
-  // Draw scaled nested wave
-  const drawScaledWave = (svg, timeframe, offsetX, scalePx, nestLevel) => {
+  // Draw scaled nested wave - oscillating around center baseline
+  const drawScaledWave = (svg, timeframe, offsetX, scalePx, strokeWidth, nestLevel) => {
     const totalRatio = timeframe.quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
     let currentX = offsetX;
-    const verticalOffset = nestLevel * 20; // Offset nested waves vertically
+    
+    // All nested waves oscillate around center baseline (no vertical offset)
+    const waveAmplitude = Math.max(15, 40 - (nestLevel * 10)); // Smaller amplitude for nested waves
 
     for (let quarter = 0; quarter < 4; quarter++) {
       const ratio = timeframe.quadrantRatios[quarter];
@@ -349,21 +351,24 @@ const RealWaveCanvas = ({
         continue;
       }
 
-      const adjustedCenterY = CENTER_Y + (nestLevel % 2 === 1 ? verticalOffset : -verticalOffset);
-
+      // Create scaled arc around center baseline
       let pathData;
       if (quarter === 0 || quarter === 2) {
-        pathData = `M ${currentX} ${adjustedCenterY} A ${radius} ${radius} 0 0 1 ${endX} ${adjustedCenterY}`;
+        // Upper arcs - reduced amplitude
+        const arcRadius = Math.min(radius, waveAmplitude);
+        pathData = `M ${currentX} ${CENTER_Y} A ${arcRadius} ${arcRadius} 0 0 1 ${endX} ${CENTER_Y}`;
       } else {
-        pathData = `M ${currentX} ${adjustedCenterY} A ${radius} ${radius} 0 0 0 ${endX} ${adjustedCenterY}`;
+        // Lower arcs - reduced amplitude  
+        const arcRadius = Math.min(radius, waveAmplitude);
+        pathData = `M ${currentX} ${CENTER_Y} A ${arcRadius} ${arcRadius} 0 0 0 ${endX} ${CENTER_Y}`;
       }
 
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', pathData);
       path.setAttribute('stroke', '#BBBBBB');
-      path.setAttribute('stroke-width', Math.max(1, timeframe.strokeMain * 0.5));
+      path.setAttribute('stroke-width', strokeWidth);
       path.setAttribute('fill', 'none');
-      path.setAttribute('opacity', '0.7');
+      path.setAttribute('opacity', '0.6');
       svg.appendChild(path);
 
       currentX = endX;
