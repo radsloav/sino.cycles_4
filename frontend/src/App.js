@@ -293,9 +293,11 @@ const RealWaveCanvas = ({
 
   // Draw nested shorter cycles
   const drawNestedWaves = (svg, mainTimeframe) => {
-    // Find shorter timeframes to display
+    // Only draw cycles that are selected and shorter than main timeframe
     const shorterTFs = TIMEFRAMES.filter(tf => 
-      tf.periodDays < mainTimeframe.periodDays && tf.name !== mainTimeframe.name
+      tf.periodDays < mainTimeframe.periodDays && 
+      tf.name !== mainTimeframe.name &&
+      selectedCycles.includes(tf.name)
     );
 
     shorterTFs.forEach((nestedTF, index) => {
@@ -305,22 +307,27 @@ const RealWaveCanvas = ({
 
       if (nestedCyclePx < 20) return; // Skip if too small to render
 
-      // Draw multiple nested cycles
+      // Calculate stroke width (logarithmic scaling)
+      const strokeScale = Math.pow(nestedTF.periodDays / mainTimeframe.periodDays, 0.7);
+      const scaledStroke = Math.max(0.5, nestedTF.strokeMain * strokeScale);
+
+      // Draw multiple nested cycles aligned to their real phase-0
+      const phase0Main = new Date(mainTimeframe.phase0);
+      const phase0Nested = new Date(nestedTF.phase0);
+      
+      // Calculate offset based on real phase difference
+      const phaseDelta = (phase0Nested.getTime() - phase0Main.getTime()) / (1000 * 60 * 60 * 24);
+      const phaseOffsetPx = (phaseDelta / mainTimeframe.periodDays) * CANVAS_PX;
+
       const viewStartPixel = translateX;
       const viewEndPixel = translateX + CANVAS_WIDTH;
       const nestedCyclesToDraw = Math.ceil(CANVAS_WIDTH / nestedCyclePx) + 2;
-      const startNestedCycle = Math.floor(viewStartPixel / nestedCyclePx) - 1;
+      const startNestedCycle = Math.floor((viewStartPixel - phaseOffsetPx) / nestedCyclePx) - 1;
 
       for (let cycleIndex = startNestedCycle; cycleIndex < startNestedCycle + nestedCyclesToDraw; cycleIndex++) {
-        const cycleOffsetX = cycleIndex * nestedCyclePx;
+        const cycleOffsetX = phaseOffsetPx + (cycleIndex * nestedCyclePx);
         
-        // Scale the nested wave to fit its cycle length
-        const scaledTF = {
-          ...nestedTF,
-          strokeMain: nestedTF.strokeMain * 0.7
-        };
-        
-        drawScaledWave(svg, scaledTF, cycleOffsetX - translateX, nestedCyclePx, index + 1);
+        drawScaledWave(svg, nestedTF, cycleOffsetX - translateX, nestedCyclePx, scaledStroke, index);
       }
     });
   };
