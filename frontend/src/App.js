@@ -419,7 +419,7 @@ const RealWaveCanvas = ({
     drawQuarterArcWave();
   }, [activeTimeframe, currentDate, translateX]);
 
-  // Touch/Mouse handlers
+  // Touch/Mouse handlers with double-click support
   const handleStart = (e) => {
     isDragging.current = true;
     const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
@@ -454,6 +454,42 @@ const RealWaveCanvas = ({
       const clientX = e.type.includes('touch') ? e.changedTouches[0].clientX : e.clientX;
       onTap && onTap(clientX);
     }
+  };
+
+  const handleDoubleClick = (e) => {
+    const clientX = e.clientX;
+    const rect = svgRef.current.getBoundingClientRect();
+    const svgX = clientX - rect.left;
+    
+    setVerticalCursor(svgX);
+    onDoubleClick && onDoubleClick(svgX);
+  };
+
+  // Draw vertical cursor
+  const drawVerticalCursor = (svg) => {
+    if (verticalCursor === null) return;
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', verticalCursor);
+    line.setAttribute('y1', 0);
+    line.setAttribute('x2', verticalCursor);
+    line.setAttribute('y2', CANVAS_HEIGHT);
+    line.setAttribute('stroke', '#FF6B35');
+    line.setAttribute('stroke-width', '3');
+    line.setAttribute('stroke-dasharray', '10,5');
+    line.setAttribute('filter', 'url(#aspectGlow)');
+    svg.appendChild(line);
+
+    // Cursor handle
+    const handle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    handle.setAttribute('cx', verticalCursor);
+    handle.setAttribute('cy', 20);
+    handle.setAttribute('r', '8');
+    handle.setAttribute('fill', '#FF6B35');
+    handle.setAttribute('stroke', '#FFFFFF');
+    handle.setAttribute('stroke-width', '2');
+    handle.setAttribute('style', 'cursor: ew-resize;');
+    svg.appendChild(handle);
   };
 
   return (
