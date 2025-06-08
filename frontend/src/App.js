@@ -45,20 +45,63 @@ const TIMEFRAMES = [
   }
 ];
 
+// Settings Modal Component
+const SettingsModal = ({ isOpen, onClose, availableCycles, selectedCycles, onCycleToggle, onCreateCustom }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="settings-modal-overlay" onClick={onClose}>
+      <div className="settings-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Settings ⚙</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="modal-content">
+          <h3>Visible Cycles</h3>
+          <div className="cycles-list">
+            {availableCycles.map(cycle => (
+              <div key={cycle.name} className="cycle-item">
+                <input
+                  type="checkbox"
+                  id={cycle.name}
+                  checked={selectedCycles.includes(cycle.name)}
+                  onChange={() => onCycleToggle(cycle.name)}
+                />
+                <label htmlFor={cycle.name}>
+                  <span className="cycle-name">{cycle.name}</span>
+                  <span className="cycle-period">({cycle.periodDays.toFixed(1)} days)</span>
+                </label>
+              </div>
+            ))}
+          </div>
+          
+          <button className="create-custom-btn" onClick={onCreateCustom}>
+            + Create Custom Cycle
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Real astronomical Wave Renderer Component
 const RealWaveCanvas = ({ 
   activeTimeframe, 
   currentDate, 
   translateX, 
+  selectedCycles,
   onDrag, 
   onTap, 
   onLongPress,
-  onDateChange 
+  onDateChange,
+  onDoubleClick 
 }) => {
   const svgRef = useRef(null);
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, time: 0 });
   const longPressTimer = useRef(null);
+  const [verticalCursor, setVerticalCursor] = useState(null);
 
   const CANVAS_PX = 1460; // Android reference width
   const CANVAS_WIDTH = 1200;
