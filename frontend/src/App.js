@@ -636,14 +636,17 @@ const ProfessionalWaveCanvas = ({
     });
   };
 
-  // Draw scaled nested wave
+  // Draw scaled nested wave using backend quadrant ratios
   const drawScaledWave = (svg, timeframe, offsetX, scalePx, strokeWidth) => {
-    const totalRatio = timeframe.quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
+    if (!timeframe?.backendData) return;
+    
+    const quadrantRatios = timeframe.backendData.quadrant_ratios;
+    const totalRatio = quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
     let currentX = offsetX;
     const waveAmplitude = Math.max(15, 30);
 
     for (let quarter = 0; quarter < 4; quarter++) {
-      const ratio = timeframe.quadrantRatios[quarter];
+      const ratio = quadrantRatios[quarter];
       const quarterWidth = (ratio / totalRatio) * scalePx;
       const radius = Math.min(quarterWidth / 2, waveAmplitude);
       const endX = currentX + quarterWidth;
@@ -662,7 +665,7 @@ const ProfessionalWaveCanvas = ({
 
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', pathData);
-      path.setAttribute('stroke', '#BBBBBB');
+      path.setAttribute('stroke', timeframe.backendData.color || '#BBBBBB');
       path.setAttribute('stroke-width', strokeWidth);
       path.setAttribute('fill', 'none');
       path.setAttribute('opacity', '0.6');
