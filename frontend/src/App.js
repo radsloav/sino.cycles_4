@@ -801,31 +801,27 @@ const ProfessionalWaveCanvas = ({
 };
 
 // Professional Timeline with EXACT Calendar Synchronization
+// Professional Timeline with Backend Integration
 const ProfessionalTimeline = ({ activeTimeframe, translateX, allTimeframes }) => {
   const getTimeframe = () => {
     return allTimeframes?.find(tf => tf.name === activeTimeframe) || 
-           allTimeframes?.[1];
+           allTimeframes?.[0];
   };
 
-  // Calculate exact pixel position for any date in Solar Year
+  // Calculate exact pixel position using backend data
   const dateToTimelinePixel = (date, timeframe) => {
-    if (timeframe.name === 'Solar Year') {
-      const baseDate = new Date('2025-03-21T00:00:00Z'); // Base Solar Year start
-      const deltaMs = date.getTime() - baseDate.getTime();
-      const yearMs = 365 * 24 * 60 * 60 * 1000; // Exactly 365 days
-      
-      const yearOffset = Math.floor(deltaMs / yearMs);
-      const yearProgress = (deltaMs % yearMs) / yearMs;
-      
-      return (yearOffset * 1460) + (yearProgress * 1460);
-    }
+    if (!timeframe?.backendData) return 0;
     
-    return 0;
+    const dtStr = date.toISOString();
+    const result = BackendCycleCalculator.datetimeToPixel(dtStr, timeframe.backendData);
+    return result.pixel_x;
   };
 
-  // Generate EXACT calendar-synchronized timeline markers
+  // Generate timeline markers using backend precision
   const generateSynchronizedTimelineMarkers = () => {
     const timeframe = getTimeframe();
+    if (!timeframe?.backendData) return [];
+    
     const markers = [];
     
     if (activeTimeframe === 'Solar Year') {
@@ -886,6 +882,7 @@ const ProfessionalTimeline = ({ activeTimeframe, translateX, allTimeframes }) =>
   };
 
   const markers = generateSynchronizedTimelineMarkers();
+  const timeframe = getTimeframe();
 
   return (
     <div className="professional-timeline">
@@ -901,15 +898,17 @@ const ProfessionalTimeline = ({ activeTimeframe, translateX, allTimeframes }) =>
           </div>
         ))}
         
-        {/* Current date indicator - synchronized */}
-        <div 
-          className="current-date-indicator"
-          style={{
-            left: `${dateToTimelinePixel(new Date(), getTimeframe()) - translateX + 100}px`
-          }}
-        >
-          {new Date().getDate()}.{new Date().getMonth() + 1}
-        </div>
+        {/* Current date indicator - using backend precision */}
+        {timeframe && (
+          <div 
+            className="current-date-indicator"
+            style={{
+              left: `${dateToTimelinePixel(new Date(), timeframe) - translateX + 100}px`
+            }}
+          >
+            {new Date().getDate()}.{new Date().getMonth() + 1}
+          </div>
+        )}
       </div>
     </div>
   );
