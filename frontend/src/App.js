@@ -769,52 +769,141 @@ const RealWaveCanvas = ({
   );
 };
 
-// Real Timeline Axis Component
+// Real Timeline Axis Component - COMPLETE functional timeline
 const RealTimelineAxis = ({ activeTimeframe, currentVisibleDate, translateX }) => {
   const getTimeframe = () => {
     return TIMEFRAMES.find(tf => tf.name === activeTimeframe) || TIMEFRAMES[1];
   };
 
-  const generateRealTimeMarkers = () => {
+  const generateCompleteTimeMarkers = () => {
     const timeframe = getTimeframe();
     const markers = [];
     const CANVAS_PX = 1460;
     
-    // Generate markers based on timeframe
+    // Calculate how many cycles to show for continuous timeline
+    const totalViewWidth = 3000; // Extended view for past/future
+    const cyclesToShow = Math.ceil(totalViewWidth / CANVAS_PX) + 2;
+    const startCycle = Math.floor((translateX - totalViewWidth/2) / CANVAS_PX) - 1;
+
     if (activeTimeframe === 'Solar Year') {
-      // Show months from March to March (following solar year)
-      const startDate = new Date(timeframe.phase0);
-      
-      for (let month = 0; month < 12; month++) {
-        const monthDate = new Date(startDate);
-        monthDate.setMonth(startDate.getMonth() + month);
+      // Generate complete timeline for multiple years
+      for (let cycleIndex = startCycle; cycleIndex < startCycle + cyclesToShow; cycleIndex++) {
+        const cycleStartDate = new Date(timeframe.phase0);
+        cycleStartDate.setFullYear(cycleStartDate.getFullYear() + cycleIndex);
         
-        // Calculate pixel position based on actual date
-        const phase0 = new Date(timeframe.phase0);
-        const deltaMs = monthDate.getTime() - phase0.getTime();
-        const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
-        const progress = (deltaMs % periodMs) / periodMs;
+        // Generate months for this year
+        for (let month = 0; month < 12; month++) {
+          const monthDate = new Date(cycleStartDate);
+          monthDate.setMonth(cycleStartDate.getMonth() + month);
+          
+          // Calculate pixel position
+          const deltaMs = monthDate.getTime() - cycleStartDate.getTime();
+          const yearMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
+          const progress = deltaMs / yearMs;
+          const pixelPos = (cycleIndex * CANVAS_PX) + (progress * CANVAS_PX);
+          
+          markers.push({
+            type: 'month',
+            date: monthDate,
+            pixel: pixelPos,
+            label: monthDate.toLocaleDateString('en', { month: 'short' }).toLowerCase(),
+            year: monthDate.getFullYear()
+          });
+        }
+
+        // Add year transition markers
+        const yearEndDate = new Date(cycleStartDate);
+        yearEndDate.setFullYear(cycleStartDate.getFullYear() + 1);
         
+        // December marker (year ending)
+        const decemberDate = new Date(cycleStartDate.getFullYear(), 11, 31);
+        const decPixel = (cycleIndex + 1) * CANVAS_PX - 50;
         markers.push({
-          type: 'month',
-          date: monthDate,
-          pixel: progress * CANVAS_PX,
-          label: monthDate.toLocaleDateString('en', { month: 'short' }).toLowerCase()
+          type: 'year-end',
+          date: decemberDate,
+          pixel: decPixel,
+          label: `${decemberDate.getFullYear()} ←`,
+          year: decemberDate.getFullYear()
         });
+
+        // January marker (year beginning)
+        const januaryDate = new Date(cycleStartDate.getFullYear() + 1, 0, 15);
+        const janPixel = (cycleIndex + 1) * CANVAS_PX + 50;
+        markers.push({
+          type: 'year-start',
+          date: januaryDate,
+          pixel: janPixel,
+          label: `${januaryDate.getFullYear()} →`,
+          year: januaryDate.getFullYear()
+        });
+      }
+    } else if (activeTimeframe === 'Lunar Month') {
+      // Generate timeline for lunar cycles
+      for (let cycleIndex = startCycle; cycleIndex < startCycle + cyclesToShow; cycleIndex++) {
+        const cycleStartDate = new Date(timeframe.phase0);
+        cycleStartDate.setTime(cycleStartDate.getTime() + (cycleIndex * timeframe.periodDays * 24 * 60 * 60 * 1000));
+        
+        // Generate week markers
+        for (let week = 0; week < 4; week++) {
+          const weekDate = new Date(cycleStartDate);
+          weekDate.setTime(weekDate.getTime() + (week * 7 * 24 * 60 * 60 * 1000));
+          
+          const deltaMs = weekDate.getTime() - cycleStartDate.getTime();
+          const cycleMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
+          const progress = deltaMs / cycleMs;
+          const pixelPos = (cycleIndex * CANVAS_PX) + (progress * CANVAS_PX);
+          
+          markers.push({
+            type: 'week',
+            date: weekDate,
+            pixel: pixelPos,
+            label: `W${week + 1}`,
+            cycle: cycleIndex
+          });
+        }
+      }
+    } else {
+      // Generic timeline for other timeframes
+      for (let cycleIndex = startCycle; cycleIndex < startCycle + cyclesToShow; cycleIndex++) {
+        const cycleStartDate = new Date(timeframe.phase0);
+        cycleStartDate.setTime(cycleStartDate.getTime() + (cycleIndex * timeframe.periodDays * 24 * 60 * 60 * 1000));
+        
+        // Generate subdivisions
+        const subdivisions = Math.min(12, Math.max(4, Math.floor(timeframe.periodDays / 10)));
+        for (let sub = 0; sub < subdivisions; sub++) {
+          const subDate = new Date(cycleStartDate);
+          subDate.setTime(subDate.getTime() + (sub * (timeframe.periodDays / subdivisions) * 24 * 60 * 60 * 1000));
+          
+          const deltaMs = subDate.getTime() - cycleStartDate.getTime();
+          const cycleMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
+          const progress = deltaMs / cycleMs;
+          const pixelPos = (cycleIndex * CANVAS_PX) + (progress * CANVAS_PX);
+          
+          markers.push({
+            type: 'subdivision',
+            date: subDate,
+            pixel: pixelPos,
+            label: sub + 1,
+            cycle: cycleIndex
+          });
+        }
       }
     }
     
-    return markers;
+    return markers.filter(marker => 
+      marker.pixel >= translateX - 200 && 
+      marker.pixel <= translateX + 1400
+    );
   };
 
-  const markers = generateRealTimeMarkers();
+  const markers = generateCompleteTimeMarkers();
 
   return (
     <div className="timeline-axis">
       <div className="timeline-track">
         {markers.map((marker, index) => (
           <div
-            key={index}
+            key={`${marker.type}-${index}-${marker.pixel}`}
             className={`timeline-marker timeline-${marker.type}`}
             style={{ left: `${marker.pixel - translateX + 100}px` }}
           >
@@ -822,11 +911,6 @@ const RealTimelineAxis = ({ activeTimeframe, currentVisibleDate, translateX }) =
             <div className="marker-label">{marker.label}</div>
           </div>
         ))}
-        
-        <div className="year-indicators">
-          <span className="year-label">{'< 2025'}</span>
-          <span className="year-label current">{'2026 >'}</span>
-        </div>
       </div>
     </div>
   );
