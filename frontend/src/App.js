@@ -942,7 +942,14 @@ function App() {
   const [currentVisibleDate, setCurrentVisibleDate] = useState(new Date());
   const [translateX, setTranslateX] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
-  const [selectedCycles, setSelectedCycles] = useState(['Lunar Month', 'Solar Day']); // Default nested cycles
+  const [showCustomCreator, setShowCustomCreator] = useState(false);
+  const [showCycleEditor, setShowCycleEditor] = useState(false);
+  const [editingCycle, setEditingCycle] = useState(null);
+  const [customTimeframes, setCustomTimeframes] = useState([]);
+  const [selectedCycles, setSelectedCycles] = useState(['Lunar Month', 'Solar Day', 'Quarter', 'Mercury Synodic', 'Venus Synodic']); // Default 5 cycles
+
+  // Combine predefined and custom timeframes
+  const allTimeframes = [...TIMEFRAMES, ...customTimeframes];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -958,6 +965,29 @@ function App() {
         ? prev.filter(name => name !== cycleName)
         : [...prev, cycleName]
     );
+  };
+
+  const handleCreateCustomCycle = (newCycle) => {
+    setCustomTimeframes(prev => [...prev, newCycle]);
+    // Auto-select the new cycle
+    setSelectedCycles(prev => [...prev, newCycle.name]);
+  };
+
+  const handleEditCycle = (cycle) => {
+    setEditingCycle(cycle);
+    setShowCycleEditor(true);
+  };
+
+  const handleSaveCycle = (updatedCycle) => {
+    if (TIMEFRAMES.find(tf => tf.name === updatedCycle.name)) {
+      // Update predefined timeframe (not recommended but possible)
+      console.log('Editing predefined cycle:', updatedCycle);
+    } else {
+      // Update custom timeframe
+      setCustomTimeframes(prev => 
+        prev.map(tf => tf.name === updatedCycle.name ? updatedCycle : tf)
+      );
+    }
   };
 
   const handleTimeFrameChange = (newTimeFrame) => {
@@ -980,7 +1010,7 @@ function App() {
 
   const handleDoubleClick = (svgX) => {
     // Calculate date at cursor position
-    const timeframe = TIMEFRAMES.find(tf => tf.name === activeTimeframe);
+    const timeframe = allTimeframes.find(tf => tf.name === activeTimeframe);
     if (timeframe) {
       const cursorPixel = translateX + svgX;
       const phase0 = new Date(timeframe.phase0);
@@ -1009,8 +1039,8 @@ function App() {
 
   // Get available cycles for settings (shorter than active timeframe)
   const getAvailableCycles = () => {
-    const activeTimeframePeriod = TIMEFRAMES.find(tf => tf.name === activeTimeframe)?.periodDays || 365;
-    return TIMEFRAMES.filter(tf => tf.periodDays < activeTimeframePeriod && tf.name !== activeTimeframe);
+    const activeTimeframePeriod = allTimeframes.find(tf => tf.name === activeTimeframe)?.periodDays || 365;
+    return allTimeframes.filter(tf => tf.periodDays < activeTimeframePeriod && tf.name !== activeTimeframe);
   };
 
   return (
@@ -1022,7 +1052,26 @@ function App() {
         availableCycles={getAvailableCycles()}
         selectedCycles={selectedCycles}
         onCycleToggle={handleCycleToggle}
-        onCreateCustom={() => console.log('Create custom cycle')}
+        onCreateCustom={() => setShowCustomCreator(true)}
+        onEditCycle={handleEditCycle}
+      />
+
+      {/* Custom Cycle Creator */}
+      <CustomCycleCreator
+        isOpen={showCustomCreator}
+        onClose={() => setShowCustomCreator(false)}
+        onCreateCycle={handleCreateCustomCycle}
+      />
+
+      {/* Cycle Editor */}
+      <CycleEditor
+        isOpen={showCycleEditor}
+        cycle={editingCycle}
+        onClose={() => {
+          setShowCycleEditor(false);
+          setEditingCycle(null);
+        }}
+        onSaveCycle={handleSaveCycle}
       />
 
       {/* Header */}
@@ -1041,7 +1090,7 @@ function App() {
             value={activeTimeframe}
             onChange={(e) => handleTimeFrameChange(e.target.value)}
           >
-            {TIMEFRAMES.map(tf => (
+            {allTimeframes.map(tf => (
               <option key={tf.name} value={tf.name}>
                 {tf.name}
               </option>
@@ -1066,6 +1115,7 @@ function App() {
             currentDate={currentDate}
             translateX={translateX}
             selectedCycles={selectedCycles}
+            allTimeframes={allTimeframes}
             onDrag={handleDrag}
             onDateChange={handleDateChange}
             onDoubleClick={handleDoubleClick}
@@ -1086,6 +1136,7 @@ function App() {
           activeTimeframe={activeTimeframe}
           currentVisibleDate={currentVisibleDate}
           translateX={translateX}
+          allTimeframes={allTimeframes}
         />
       </main>
 
