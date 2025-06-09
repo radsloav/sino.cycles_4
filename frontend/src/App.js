@@ -772,9 +772,9 @@ const RealWaveCanvas = ({
 };
 
 // Real Timeline Axis Component - COMPLETE functional timeline
-const RealTimelineAxis = ({ activeTimeframe, currentVisibleDate, translateX }) => {
+const RealTimelineAxis = ({ activeTimeframe, currentVisibleDate, translateX, allTimeframes }) => {
   const getTimeframe = () => {
-    return TIMEFRAMES.find(tf => tf.name === activeTimeframe) || TIMEFRAMES[1];
+    return allTimeframes?.find(tf => tf.name === activeTimeframe) || TIMEFRAMES.find(tf => tf.name === activeTimeframe) || TIMEFRAMES[1];
   };
 
   const generateCompleteTimeMarkers = () => {
