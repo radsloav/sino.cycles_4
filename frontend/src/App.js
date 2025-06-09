@@ -599,28 +599,31 @@ const ProfessionalWaveCanvas = ({
     svg.appendChild(circle);
   };
 
-  // Draw nested waves
+  // Draw nested waves using backend data
   const drawNestedWaves = (svg, mainTimeframe) => {
+    if (!mainTimeframe?.backendData) return;
+    
     const availableTimeframes = allTimeframes || [];
     const shorterTFs = availableTimeframes.filter(tf => 
-      tf.periodDays < mainTimeframe.periodDays && 
+      tf.backendData && 
+      tf.backendData.period_days < mainTimeframe.backendData.period_days && 
       tf.name !== mainTimeframe.name &&
       selectedCycles.includes(tf.name)
     );
 
     shorterTFs.forEach((nestedTF, index) => {
-      const cyclesPerMain = mainTimeframe.periodDays / nestedTF.periodDays;
+      const cyclesPerMain = mainTimeframe.backendData.period_days / nestedTF.backendData.period_days;
       const nestedCyclePx = CANVAS_PX / cyclesPerMain;
 
       if (nestedCyclePx < 20) return;
 
-      const strokeScale = Math.pow(nestedTF.periodDays / mainTimeframe.periodDays, 0.7);
-      const scaledStroke = Math.max(0.5, nestedTF.strokeMain * strokeScale);
+      const strokeScale = Math.pow(nestedTF.backendData.period_days / mainTimeframe.backendData.period_days, 0.7);
+      const scaledStroke = Math.max(0.5, nestedTF.backendData.base_stroke * strokeScale);
 
-      const phase0Main = new Date(mainTimeframe.phase0);
-      const phase0Nested = new Date(nestedTF.phase0);
+      const phase0Main = new Date(mainTimeframe.backendData.epoch.replace('Z', '+00:00'));
+      const phase0Nested = new Date(nestedTF.backendData.epoch.replace('Z', '+00:00'));
       const phaseDelta = (phase0Nested.getTime() - phase0Main.getTime()) / (1000 * 60 * 60 * 24);
-      const phaseOffsetPx = (phaseDelta / mainTimeframe.periodDays) * CANVAS_PX;
+      const phaseOffsetPx = (phaseDelta / mainTimeframe.backendData.period_days) * CANVAS_PX;
 
       const viewStartPixel = translateX;
       const nestedCyclesToDraw = Math.ceil(CANVAS_WIDTH / nestedCyclePx) + 2;
