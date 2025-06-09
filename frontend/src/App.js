@@ -971,7 +971,7 @@ function App() {
     'Venus Synodic': false
   });
 
-  const allTimeframes = [...TIMEFRAMES, ...customTimeframes];
+  const allTimeframes = [...customTimeframes];
 
   useEffect(() => {
     const interval = setInterval(() => {
