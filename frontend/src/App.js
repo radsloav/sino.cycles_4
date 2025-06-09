@@ -277,184 +277,109 @@ const CurveSettingsModal = ({ isOpen, onClose, availableCycles, selectedCycles, 
   );
 };
 
-// Enhanced Left Controls Panel
-const EnhancedLeftControlsPanel = ({ 
+// Right Settings Panel
+const RightSettingsPanel = ({ 
+  isOpen,
+  onClose,
   lineSettings, 
   onToggleLineSettings,
   curveSettings,
   onToggleCurveSettings,
-  onOpenCurveSettings,
-  isCollapsed,
-  onToggleCollapse 
+  onOpenCurveSettings
 }) => {
   const [activeSection, setActiveSection] = useState('lines');
 
+  if (!isOpen) return null;
+
   return (
-    <div className={`left-controls ${isCollapsed ? 'collapsed' : ''}`}>
-      <button 
-        className="collapse-toggle"
-        onClick={onToggleCollapse}
-      >
-        {isCollapsed ? '▶' : '◀'}
-      </button>
-      
-      {!isCollapsed && (
-        <div className="controls-content">
-          {/* Section Tabs */}
-          <div className="section-tabs">
-            <button 
-              className={`tab-btn ${activeSection === 'lines' ? 'active' : ''}`}
-              onClick={() => setActiveSection('lines')}
-            >
-              Lines
-            </button>
-            <button 
-              className={`tab-btn ${activeSection === 'curves' ? 'active' : ''}`}
-              onClick={() => setActiveSection('curves')}
-            >
-              Curves
-            </button>
+    <div className="right-settings-panel">
+      <div className="settings-header">
+        <h2>Settings</h2>
+        <button className="close-settings-btn" onClick={onClose}>×</button>
+      </div>
+
+      {/* Section Tabs */}
+      <div className="settings-tabs">
+        <button 
+          className={`settings-tab ${activeSection === 'lines' ? 'active' : ''}`}
+          onClick={() => setActiveSection('lines')}
+        >
+          Lines
+        </button>
+        <button 
+          className={`settings-tab ${activeSection === 'curves' ? 'active' : ''}`}
+          onClick={() => setActiveSection('curves')}
+        >
+          Curves
+        </button>
+      </div>
+
+      <div className="settings-content">
+        {/* Lines Section */}
+        {activeSection === 'lines' && (
+          <div className="settings-group">
+            <div className="settings-section-title">Line Settings</div>
+            
+            {[
+              { key: 'mainWaveLines', label: 'main wave lines' },
+              { key: 'nestedWaveLines', label: 'nested wave lines' },
+              { key: 'dashedDateTimeLine', label: 'dashed date-time line' },
+              { key: 'monthlyDividers', label: 'monthly dividers' },
+              { key: 'waveDividers', label: 'wave dividers' },
+              { key: 'centerAxisLine', label: 'center axis line' },
+              { key: 'todayLine', label: 'today line' },
+              { key: 'aspectPoints', label: 'aspect points' }
+            ].map(({ key, label }) => (
+              <div key={key} className="settings-item">
+                <span className="settings-label">{label}</span>
+                <label className="settings-toggle">
+                  <input
+                    type="checkbox"
+                    checked={lineSettings[key]}
+                    onChange={() => onToggleLineSettings(key)}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            ))}
           </div>
+        )}
 
-          {/* Lines Section */}
-          {activeSection === 'lines' && (
-            <div className="control-group">
-              <div className="section-title">Line Settings</div>
-              
-              <div className="control-item">
-                <span className="control-label">main wave lines</span>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={lineSettings.mainWaveLines}
-                    onChange={() => onToggleLineSettings('mainWaveLines')}
-                  />
-                  <span className="slider"></span>
-                </label>
-              </div>
-
-              <div className="control-item">
-                <span className="control-label">nested wave lines</span>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={lineSettings.nestedWaveLines}
-                    onChange={() => onToggleLineSettings('nestedWaveLines')}
-                  />
-                  <span className="slider"></span>
-                </label>
-              </div>
-
-              <div className="control-item">
-                <span className="control-label">dashed date-time line</span>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={lineSettings.dashedDateTimeLine}
-                    onChange={() => onToggleLineSettings('dashedDateTimeLine')}
-                  />
-                  <span className="slider"></span>
-                </label>
-              </div>
-
-              <div className="control-item">
-                <span className="control-label">monthly dividers</span>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={lineSettings.monthlyDividers}
-                    onChange={() => onToggleLineSettings('monthlyDividers')}
-                  />
-                  <span className="slider"></span>
-                </label>
-              </div>
-
-              <div className="control-item">
-                <span className="control-label">wave dividers</span>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={lineSettings.waveDividers}
-                    onChange={() => onToggleLineSettings('waveDividers')}
-                  />
-                  <span className="slider"></span>
-                </label>
-              </div>
-
-              <div className="control-item">
-                <span className="control-label">center axis line</span>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={lineSettings.centerAxisLine}
-                    onChange={() => onToggleLineSettings('centerAxisLine')}
-                  />
-                  <span className="slider"></span>
-                </label>
-              </div>
-
-              <div className="control-item">
-                <span className="control-label">today line</span>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={lineSettings.todayLine}
-                    onChange={() => onToggleLineSettings('todayLine')}
-                  />
-                  <span className="slider"></span>
-                </label>
-              </div>
-
-              <div className="control-item">
-                <span className="control-label">aspect points</span>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={lineSettings.aspectPoints}
-                    onChange={() => onToggleLineSettings('aspectPoints')}
-                  />
-                  <span className="slider"></span>
-                </label>
-              </div>
+        {/* Curves Section */}
+        {activeSection === 'curves' && (
+          <div className="settings-group">
+            <div className="settings-section-title">Curve Settings</div>
+            
+            <div className="curves-summary">
+              <p>{Object.values(curveSettings).filter(v => v).length} cycles visible</p>
             </div>
-          )}
 
-          {/* Curves Section */}
-          {activeSection === 'curves' && (
-            <div className="control-group">
-              <div className="section-title">Curve Settings</div>
-              
-              <div className="curves-summary">
-                <p>{Object.values(curveSettings).filter(v => v).length} cycles visible</p>
-              </div>
+            <button 
+              className="manage-cycles-btn"
+              onClick={onOpenCurveSettings}
+            >
+              Manage Cycles & Visibility
+            </button>
 
-              <button 
-                className="settings-btn"
-                onClick={onOpenCurveSettings}
-              >
-                Manage Cycles & Visibility
-              </button>
-
-              <div className="quick-toggles">
-                <h4>Quick Toggles:</h4>
-                {Object.entries(curveSettings).slice(0, 5).map(([cycleName, isVisible]) => (
-                  <div key={cycleName} className="control-item">
-                    <span className="control-label">{cycleName}</span>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={isVisible}
-                        onChange={() => onToggleCurveSettings(cycleName)}
-                      />
-                      <span className="slider"></span>
-                    </label>
-                  </div>
-                ))}
-              </div>
+            <div className="quick-curve-toggles">
+              <h4>Quick Toggles:</h4>
+              {Object.entries(curveSettings).slice(0, 5).map(([cycleName, isVisible]) => (
+                <div key={cycleName} className="settings-item">
+                  <span className="settings-label">{cycleName}</span>
+                  <label className="settings-toggle">
+                    <input
+                      type="checkbox"
+                      checked={isVisible}
+                      onChange={() => onToggleCurveSettings(cycleName)}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
