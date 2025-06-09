@@ -630,7 +630,7 @@ const ProfessionalWaveCanvas = ({
 
   // Draw nested waves
   const drawNestedWaves = (svg, mainTimeframe) => {
-    const availableTimeframes = allTimeframes || TIMEFRAMES;
+    const availableTimeframes = allTimeframes || [];
     const shorterTFs = availableTimeframes.filter(tf => 
       tf.periodDays < mainTimeframe.periodDays && 
       tf.name !== mainTimeframe.name &&
