@@ -949,7 +949,7 @@ const ProfessionalWaveCanvas = ({
   );
 };
 
-// Professional Timeline with Calendar Months
+// Professional Timeline with EXACT Calendar Synchronization
 const ProfessionalTimeline = ({ activeTimeframe, translateX, allTimeframes }) => {
   const getTimeframe = () => {
     return allTimeframes?.find(tf => tf.name === activeTimeframe) || 
@@ -957,68 +957,92 @@ const ProfessionalTimeline = ({ activeTimeframe, translateX, allTimeframes }) =>
            TIMEFRAMES[1];
   };
 
-  // Generate calendar-based timeline markers
-  const generateCalendarTimelineMarkers = () => {
+  // Calculate exact pixel position for any date in Solar Year
+  const dateToTimelinePixel = (date, timeframe) => {
+    if (timeframe.name === 'Solar Year') {
+      const baseDate = new Date('2025-03-21T00:00:00Z'); // Base Solar Year start
+      const deltaMs = date.getTime() - baseDate.getTime();
+      const yearMs = 365 * 24 * 60 * 60 * 1000; // Exactly 365 days
+      
+      const yearOffset = Math.floor(deltaMs / yearMs);
+      const yearProgress = (deltaMs % yearMs) / yearMs;
+      
+      return (yearOffset * 1460) + (yearProgress * 1460);
+    }
+    
+    return 0;
+  };
+
+  // Generate EXACT calendar-synchronized timeline markers
+  const generateSynchronizedTimelineMarkers = () => {
     const timeframe = getTimeframe();
     const markers = [];
-    const CANVAS_PX = 1460;
     
     if (activeTimeframe === 'Solar Year') {
-      const baseYear = 2025;
+      const viewStart = translateX - 400;
+      const viewEnd = translateX + 1800;
       
-      for (let year = baseYear - 2; year <= baseYear + 5; year++) {
-        // Calendar months (1st of each month)
-        for (let month = 0; month < 12; month++) {
-          const monthDate = new Date(year, month, 1);
-          const monthPixel = ((monthDate.getTime() - new Date(`${year}-03-21T00:00:00Z`).getTime()) / (1000 * 60 * 60 * 24) + (year - 2025) * 365) / 365 * CANVAS_PX;
+      // Generate markers for years around current view
+      for (let year = 2023; year <= 2030; year++) {
+        // Calendar months - exact 1st of month
+        const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 
+                           'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        
+        monthNames.forEach((monthName, monthIndex) => {
+          const monthDate = new Date(year, monthIndex, 1);
+          const monthPixel = dateToTimelinePixel(monthDate, timeframe);
           
-          if (monthPixel >= translateX - 200 && monthPixel <= translateX + 1400) {
+          if (monthPixel >= viewStart && monthPixel <= viewEnd) {
             markers.push({
               type: 'month',
               date: monthDate,
               pixel: monthPixel,
-              label: monthDate.toLocaleDateString('en', { month: 'short' }).toLowerCase(),
-              year: monthDate.getFullYear()
+              label: monthName,
+              year: year
             });
           }
-        }
+        });
 
-        // Year transition markers
-        const yearEnd = new Date(year, 11, 31);
-        const yearStart = new Date(year + 1, 0, 1);
+        // Year boundaries - exactly at year transitions
+        const yearEndDate = new Date(year, 11, 31); // December 31
+        const yearStartDate = new Date(year + 1, 0, 1); // January 1
         
-        markers.push({
-          type: 'year-end',
-          date: yearEnd,
-          pixel: ((year - 2024) * 365) / 365 * CANVAS_PX - 50,
-          label: `< ${year}`,
-          year: year
-        });
-
-        markers.push({
-          type: 'year-start',
-          date: yearStart,
-          pixel: ((year + 1 - 2025) * 365) / 365 * CANVAS_PX + 50,
-          label: `${year + 1} >`,
-          year: year + 1
-        });
+        const yearEndPixel = dateToTimelinePixel(yearEndDate, timeframe);
+        const yearStartPixel = dateToTimelinePixel(yearStartDate, timeframe);
+        
+        if (yearEndPixel >= viewStart && yearEndPixel <= viewEnd) {
+          markers.push({
+            type: 'year-end',
+            date: yearEndDate,
+            pixel: yearEndPixel,
+            label: `< ${year}`,
+            year: year
+          });
+        }
+        
+        if (yearStartPixel >= viewStart && yearStartPixel <= viewEnd) {
+          markers.push({
+            type: 'year-start',
+            date: yearStartDate,
+            pixel: yearStartPixel,
+            label: `${year + 1} >`,
+            year: year + 1
+          });
+        }
       }
     }
     
-    return markers.filter(marker => 
-      marker.pixel >= translateX - 200 && 
-      marker.pixel <= translateX + 1400
-    );
+    return markers;
   };
 
-  const markers = generateCalendarTimelineMarkers();
+  const markers = generateSynchronizedTimelineMarkers();
 
   return (
     <div className="professional-timeline">
       <div className="timeline-track">
         {markers.map((marker, index) => (
           <div
-            key={`${marker.type}-${index}-${marker.pixel}`}
+            key={`${marker.type}-${marker.year}-${marker.pixel}`}
             className={`timeline-marker timeline-${marker.type}`}
             style={{ left: `${marker.pixel - translateX + 100}px` }}
           >
@@ -1027,8 +1051,13 @@ const ProfessionalTimeline = ({ activeTimeframe, translateX, allTimeframes }) =>
           </div>
         ))}
         
-        {/* Current date indicator on timeline */}
-        <div className="current-date-indicator">
+        {/* Current date indicator - synchronized */}
+        <div 
+          className="current-date-indicator"
+          style={{
+            left: `${dateToTimelinePixel(new Date(), getTimeframe()) - translateX + 100}px`
+          }}
+        >
           {new Date().getDate()}.{new Date().getMonth() + 1}
         </div>
       </div>
