@@ -611,9 +611,12 @@ const ProfessionalWaveCanvas = ({
     }
   };
 
-  // Draw calendar monthly dividers (1st of each month)
+  // Draw calendar monthly dividers (1st of each month) - ONLY ONCE
   const drawCalendarMonthlyDividers = (svg, timeframe) => {
+    if (activeTimeframe !== 'Solar Year') return; // Only for Solar Year
+    
     const baseYear = 2025;
+    const drawnPositions = new Set(); // Prevent duplicates
     
     for (let year = baseYear - 2; year <= baseYear + 5; year++) {
       for (let month = 0; month < 12; month++) {
@@ -623,8 +626,11 @@ const ProfessionalWaveCanvas = ({
         
         // Calculate position relative to current view
         const adjustedPixel = monthPixel - translateX;
+        const pixelKey = Math.round(adjustedPixel); // Round to prevent tiny differences
         
-        if (adjustedPixel >= -50 && adjustedPixel <= CANVAS_WIDTH + 50) {
+        if (adjustedPixel >= -50 && adjustedPixel <= CANVAS_WIDTH + 50 && !drawnPositions.has(pixelKey)) {
+          drawnPositions.add(pixelKey);
+          
           const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
           line.setAttribute('x1', adjustedPixel);
           line.setAttribute('y1', 50);
