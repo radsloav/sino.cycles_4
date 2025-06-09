@@ -6,7 +6,7 @@ import math
 from datetime import datetime, timedelta
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://ccb9bba6-7176-47d3-8595-6ba30e39a00e.preview.emergentagent.com/api"
+BACKEND_URL = "https://a166d244-243a-46fe-8027-dedad2f2208f.preview.emergentagent.com/api"
 
 class SiNoBackendTests(unittest.TestCase):
     
