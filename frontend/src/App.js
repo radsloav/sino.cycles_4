@@ -998,7 +998,7 @@ function App() {
   const [translateX, setTranslateX] = useState(0);
   const [customTimeframes, setCustomTimeframes] = useState([]);
   const [selectedCycles, setSelectedCycles] = useState(['Lunar Month', 'Solar Day', 'Quarter']);
-  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [showRightSettings, setShowRightSettings] = useState(false);
   const [showCurveSettings, setShowCurveSettings] = useState(false);
   const [showCustomCreator, setShowCustomCreator] = useState(false);
   
@@ -1046,7 +1046,6 @@ function App() {
       [cycleName]: !prev[cycleName]
     }));
     
-    // Also update selectedCycles
     setSelectedCycles(prev => 
       prev.includes(cycleName) 
         ? prev.filter(name => name !== cycleName)
@@ -1116,15 +1115,15 @@ function App() {
 
   return (
     <div className="App professional-app">
-      {/* Enhanced Left Controls Panel */}
-      <EnhancedLeftControlsPanel
+      {/* Right Settings Panel */}
+      <RightSettingsPanel
+        isOpen={showRightSettings}
+        onClose={() => setShowRightSettings(false)}
         lineSettings={lineSettings}
         onToggleLineSettings={handleToggleLineSettings}
         curveSettings={curveSettings}
         onToggleCurveSettings={handleToggleCurveSettings}
         onOpenCurveSettings={() => setShowCurveSettings(true)}
-        isCollapsed={leftPanelCollapsed}
-        onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
       />
 
       {/* Curve Settings Modal */}
@@ -1209,7 +1208,10 @@ function App() {
 
       {/* Right Sidebar */}
       <div className="professional-right-sidebar">
-        <button className="sidebar-btn">
+        <button 
+          className="sidebar-btn"
+          onClick={() => setShowRightSettings(true)}
+        >
           <div className="btn-icon">⚙</div>
         </button>
         
