@@ -4,6 +4,66 @@ import './App.css';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Timeframe definitions with real astronomical data
+const TIMEFRAMES = [
+  {
+    name: 'Great Year',
+    periodDays: 25920 * 365.2422,
+    phase0: '2000-03-21T00:00:00Z',
+    strokeMain: 6,
+    quadrantRatios: [6480, 6480, 6480, 6480],
+    editable: false
+  },
+  {
+    name: 'Solar Year', 
+    periodDays: 365.2422,
+    phase0: '2025-03-21T00:00:00Z',
+    strokeMain: 4,
+    quadrantRatios: [93, 92, 89, 91],
+    editable: true
+  },
+  {
+    name: 'Quarter',
+    periodDays: 91.31,
+    phase0: '2025-03-21T00:00:00Z',
+    strokeMain: 3.5,
+    quadrantRatios: [23, 23, 23, 22],
+    editable: true
+  },
+  {
+    name: 'Lunar Month',
+    periodDays: 29.530589,
+    phase0: '2025-03-16T17:10:00Z',
+    strokeMain: 3,
+    quadrantRatios: [7.38, 7.38, 7.38, 7.38],
+    editable: true
+  },
+  {
+    name: 'Mercury Synodic',
+    periodDays: 115.88,
+    phase0: '2025-01-15T00:00:00Z',
+    strokeMain: 2.8,
+    quadrantRatios: [29, 29, 29, 28],
+    editable: true
+  },
+  {
+    name: 'Venus Synodic',
+    periodDays: 583.92,
+    phase0: '2025-01-10T00:00:00Z',
+    strokeMain: 3.2,
+    quadrantRatios: [146, 146, 146, 145],
+    editable: true
+  },
+  {
+    name: 'Solar Day',
+    periodDays: 1.0,
+    phase0: '2025-01-01T06:00:00Z',
+    strokeMain: 2,
+    quadrantRatios: [6, 6, 6, 6],
+    editable: true
+  }
+];
+
 // SiNo Logo Component
 const SiNoLogo = () => (
   <div className="sino-logo">
@@ -13,369 +73,152 @@ const SiNoLogo = () => (
   </div>
 );
 
-// Timeframe definitions with real astronomical data
-const TIMEFRAMES = [
-  {
-    name: 'Great Year',
-    periodDays: 25920 * 365.2422,
-    phase0: '2000-03-21T00:00:00Z', // Vernal Equinox 2000
-    strokeMain: 6,
-    quadrantRatios: [6480, 6480, 6480, 6480], // years
-    editable: false
-  },
-  {
-    name: 'Solar Year', 
-    periodDays: 365.2422,
-    phase0: '2025-03-21T00:00:00Z', // Vernal Equinox 2025 (21 March to 21 March)
-    strokeMain: 4,
-    quadrantRatios: [93, 92, 89, 91], // days (Spring, Summer, Autumn, Winter)
-    editable: true
-  },
-  {
-    name: 'Quarter',
-    periodDays: 91.31,  // Average quarter (365.24/4)
-    phase0: '2025-03-21T00:00:00Z', // Spring equinox
-    strokeMain: 3.5,
-    quadrantRatios: [23, 23, 23, 22], // days
-    editable: true
-  },
-  {
-    name: 'Lunar Month',
-    periodDays: 29.530589,
-    phase0: '2025-03-16T17:10:00Z', // First Quarter March 2025
-    strokeMain: 3,
-    quadrantRatios: [7.38, 7.38, 7.38, 7.38], // days
-    editable: true
-  },
-  {
-    name: 'Mercury Synodic',
-    periodDays: 115.88, // Mercury synodic period
-    phase0: '2025-01-15T00:00:00Z', // Superior conjunction
-    strokeMain: 2.8,
-    quadrantRatios: [29, 29, 29, 28], // days
-    editable: true
-  },
-  {
-    name: 'Venus Synodic',
-    periodDays: 583.92, // Venus synodic period
-    phase0: '2025-01-10T00:00:00Z', // Superior conjunction
-    strokeMain: 3.2,
-    quadrantRatios: [146, 146, 146, 145], // days
-    editable: true
-  },
-  {
-    name: 'Solar Day',
-    periodDays: 1.0,
-    phase0: '2025-01-01T06:00:00Z', // Sunrise epoch
-    strokeMain: 2,
-    quadrantRatios: [6, 6, 6, 6], // hours
-    editable: true
-  }
-];
-
-// Custom Cycle Creator Component
-const CustomCycleCreator = ({ isOpen, onClose, onCreateCycle }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    periodDays: '',
-    phase0: '',
-    strokeMain: 3,
-    quadrantRatios: [25, 25, 25, 25]
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const newCycle = {
-      ...formData,
-      periodDays: parseFloat(formData.periodDays),
-      quadrantRatios: formData.quadrantRatios.map(r => parseInt(r)),
-      editable: true
-    };
-    onCreateCycle(newCycle);
-    onClose();
-    setFormData({
-      name: '',
-      periodDays: '',
-      phase0: '',
-      strokeMain: 3,
-      quadrantRatios: [25, 25, 25, 25]
-    });
-  };
-
-  if (!isOpen) return null;
-
+// Left Controls Panel
+const LeftControlsPanel = ({ 
+  displaySettings, 
+  onToggleDisplay,
+  isCollapsed,
+  onToggleCollapse 
+}) => {
   return (
-    <div className="settings-modal-overlay" onClick={onClose}>
-      <div className="custom-cycle-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Create Custom Cycle</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="cycle-form">
-          <div className="form-group">
-            <label>Cycle Name:</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              required
-              placeholder="e.g., Mars Synodic"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Period (days):</label>
-            <input
-              type="number"
-              step="0.001"
-              value={formData.periodDays}
-              onChange={(e) => setFormData({...formData, periodDays: e.target.value})}
-              required
-              placeholder="e.g., 779.94"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Start Date (Phase 0°):</label>
-            <input
-              type="datetime-local"
-              value={formData.phase0.replace('Z', '')}
-              onChange={(e) => setFormData({...formData, phase0: e.target.value + 'Z'})}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Stroke Width:</label>
-            <input
-              type="range"
-              min="1"
-              max="8"
-              step="0.1"
-              value={formData.strokeMain}
-              onChange={(e) => setFormData({...formData, strokeMain: parseFloat(e.target.value)})}
-            />
-            <span>{formData.strokeMain}px</span>
-          </div>
-
-          <div className="form-group">
-            <label>Quadrant Ratios:</label>
-            <div className="quadrant-inputs">
-              {formData.quadrantRatios.map((ratio, index) => (
-                <input
-                  key={index}
-                  type="number"
-                  value={ratio}
-                  onChange={(e) => {
-                    const newRatios = [...formData.quadrantRatios];
-                    newRatios[index] = parseInt(e.target.value) || 0;
-                    setFormData({...formData, quadrantRatios: newRatios});
-                  }}
-                  placeholder={`Q${index + 1}`}
-                  min="1"
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="form-actions">
-            <button type="button" onClick={onClose}>Cancel</button>
-            <button type="submit">Create Cycle</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Cycle Editor Component
-const CycleEditor = ({ isOpen, cycle, onClose, onSaveCycle }) => {
-  const [formData, setFormData] = useState(cycle || {});
-
-  useEffect(() => {
-    setFormData(cycle || {});
-  }, [cycle]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSaveCycle(formData);
-    onClose();
-  };
-
-  if (!isOpen || !cycle) return null;
-
-  return (
-    <div className="settings-modal-overlay" onClick={onClose}>
-      <div className="custom-cycle-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Edit {cycle.name}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="cycle-form">
-          <div className="form-group">
-            <label>Cycle Name:</label>
-            <input
-              type="text"
-              value={formData.name || ''}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Period (days):</label>
-            <input
-              type="number"
-              step="0.001"
-              value={formData.periodDays || ''}
-              onChange={(e) => setFormData({...formData, periodDays: parseFloat(e.target.value)})}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Start Date (Phase 0°):</label>
-            <input
-              type="datetime-local"
-              value={formData.phase0?.replace('Z', '') || ''}
-              onChange={(e) => setFormData({...formData, phase0: e.target.value + 'Z'})}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Stroke Width:</label>
-            <input
-              type="range"
-              min="1"
-              max="8"
-              step="0.1"
-              value={formData.strokeMain || 3}
-              onChange={(e) => setFormData({...formData, strokeMain: parseFloat(e.target.value)})}
-            />
-            <span>{formData.strokeMain || 3}px</span>
-          </div>
-
-          <div className="form-group">
-            <label>Quadrant Ratios:</label>
-            <div className="quadrant-inputs">
-              {(formData.quadrantRatios || [25,25,25,25]).map((ratio, index) => (
-                <input
-                  key={index}
-                  type="number"
-                  value={ratio}
-                  onChange={(e) => {
-                    const newRatios = [...(formData.quadrantRatios || [25,25,25,25])];
-                    newRatios[index] = parseInt(e.target.value) || 0;
-                    setFormData({...formData, quadrantRatios: newRatios});
-                  }}
-                  placeholder={`Q${index + 1}`}
-                  min="1"
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="form-actions">
-            <button type="button" onClick={onClose}>Cancel</button>
-            <button type="submit">Save Changes</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Settings Modal Component
-const SettingsModal = ({ isOpen, onClose, availableCycles, selectedCycles, onCycleToggle, onCreateCustom, onEditCycle }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="settings-modal-overlay" onClick={onClose}>
-      <div className="settings-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Settings ⚙</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
-        </div>
-        
-        <div className="modal-content">
-          <h3>Visible Cycles</h3>
-          <div className="cycles-list">
-            {availableCycles.map(cycle => (
-              <div key={cycle.name} className="cycle-item">
+    <div className={`left-controls ${isCollapsed ? 'collapsed' : ''}`}>
+      <button 
+        className="collapse-toggle"
+        onClick={onToggleCollapse}
+      >
+        {isCollapsed ? '▶' : '◀'}
+      </button>
+      
+      {!isCollapsed && (
+        <div className="controls-content">
+          <div className="control-group">
+            <div className="control-item">
+              <span className="control-label">lines</span>
+              <label className="toggle-switch">
                 <input
                   type="checkbox"
-                  id={cycle.name}
-                  checked={selectedCycles.includes(cycle.name)}
-                  onChange={() => onCycleToggle(cycle.name)}
+                  checked={displaySettings.lines}
+                  onChange={() => onToggleDisplay('lines')}
                 />
-                <label htmlFor={cycle.name}>
-                  <span className="cycle-name">{cycle.name}</span>
-                  <span className="cycle-period">({cycle.periodDays.toFixed(1)} days)</span>
-                </label>
-                {cycle.editable && (
-                  <button 
-                    className="edit-cycle-btn"
-                    onClick={() => onEditCycle(cycle)}
-                    title="Edit cycle"
-                  >
-                    ✏️
-                  </button>
-                )}
-              </div>
-            ))}
+                <span className="slider"></span>
+              </label>
+            </div>
+
+            <div className="control-item">
+              <span className="control-label">dashed date-time line</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={displaySettings.dashedDateTimeLine}
+                  onChange={() => onToggleDisplay('dashedDateTimeLine')}
+                />
+                <span className="slider"></span>
+              </label>
+            </div>
+
+            <div className="control-item">
+              <span className="control-label">monthly dividers</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={displaySettings.monthlyDividers}
+                  onChange={() => onToggleDisplay('monthlyDividers')}
+                />
+                <span className="slider"></span>
+              </label>
+            </div>
+
+            <div className="control-item">
+              <span className="control-label">edges</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={displaySettings.edges}
+                  onChange={() => onToggleDisplay('edges')}
+                />
+                <span className="slider"></span>
+              </label>
+            </div>
+
+            <div className="control-item">
+              <span className="control-label">today line</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={displaySettings.todayLine}
+                  onChange={() => onToggleDisplay('todayLine')}
+                />
+                <span className="slider"></span>
+              </label>
+            </div>
+
+            <div className="control-item">
+              <span className="control-label">main wave dividers</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={displaySettings.mainWaveDividers}
+                  onChange={() => onToggleDisplay('mainWaveDividers')}
+                />
+                <span className="slider"></span>
+              </label>
+            </div>
+
+            <div className="control-item">
+              <span className="control-label">x line</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={displaySettings.xLine}
+                  onChange={() => onToggleDisplay('xLine')}
+                />
+                <span className="slider"></span>
+              </label>
+            </div>
           </div>
-          
-          <button className="create-custom-btn" onClick={onCreateCustom}>
-            + Create Custom Cycle
-          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
-// Real astronomical Wave Renderer Component
-const RealWaveCanvas = ({ 
+// Professional Wave Canvas Component
+const ProfessionalWaveCanvas = ({ 
   activeTimeframe, 
   currentDate, 
   translateX, 
   selectedCycles,
   allTimeframes,
+  displaySettings,
   onDrag, 
-  onTap, 
-  onLongPress,
   onDateChange,
-  onDoubleClick 
+  onHover
 }) => {
   const svgRef = useRef(null);
+  const [mousePosition, setMousePosition] = useState(null);
+  const [hoverDate, setHoverDate] = useState(null);
   const isDragging = useRef(false);
-  const dragStart = useRef({ x: 0, time: 0 });
-  const longPressTimer = useRef(null);
-  const [verticalCursor, setVerticalCursor] = useState(null);
+  const dragStart = useRef({ x: 0 });
 
-  const CANVAS_PX = 1460; // Android reference width
+  const CANVAS_PX = 1460;
   const CANVAS_WIDTH = 1200;
   const CANVAS_HEIGHT = 400;
   const CENTER_Y = CANVAS_HEIGHT / 2;
   
-  // Aspect colors (M-R-G-B for 0°-90°-180°-270°)
+  // Professional aspect colors
   const ASPECT_COLORS = ['#FF0080', '#FF4444', '#00FF44', '#0080FF'];
 
-  // Get active timeframe data
   const getActiveTimeframe = () => {
-    return allTimeframes?.find(tf => tf.name === activeTimeframe) || TIMEFRAMES.find(tf => tf.name === activeTimeframe) || TIMEFRAMES[1];
+    return allTimeframes?.find(tf => tf.name === activeTimeframe) || 
+           TIMEFRAMES.find(tf => tf.name === activeTimeframe) || 
+           TIMEFRAMES[1];
   };
 
-  // Convert date to pixel position within timeframe
   const dateToPixel = (date, timeframe) => {
     const phase0 = new Date(timeframe.phase0);
     const deltaMs = date.getTime() - phase0.getTime();
     const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
     
-    // Handle cycling (positive and negative time)
     let normalizedDelta = deltaMs;
     if (deltaMs < 0) {
       const cyclesBefore = Math.ceil(Math.abs(deltaMs) / periodMs);
@@ -386,37 +229,28 @@ const RealWaveCanvas = ({
     return cycleProgress * CANVAS_PX;
   };
 
-  // Convert pixel to date
   const pixelToDate = (pixel, timeframe) => {
     const phase0 = new Date(timeframe.phase0);
-    const cycleProgress = pixel / CANVAS_PX;
+    const cycleProgress = (pixel % CANVAS_PX) / CANVAS_PX;
     const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
     const deltaMs = cycleProgress * periodMs;
     
     return new Date(phase0.getTime() + deltaMs);
   };
 
-  // Calculate current visible date based on center position
-  const getCurrentVisibleDate = () => {
-    const timeframe = getActiveTimeframe();
-    const centerPixel = translateX + (CANVAS_WIDTH / 2);
-    return pixelToDate(centerPixel, timeframe);
-  };
-
-  // Draw quarter-arc wave with proper quadrant ratios
-  const drawQuarterArcWave = () => {
+  // Draw professional quarter-arc wave
+  const drawProfessionalWave = () => {
     const svg = svgRef.current;
     if (!svg) return;
 
-    // Clear previous content
     svg.innerHTML = '';
-    
     const timeframe = getActiveTimeframe();
 
-    // Create glow filter
+    // Create professional glow filter
     const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    
     const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
-    filter.setAttribute('id', 'aspectGlow');
+    filter.setAttribute('id', 'professionalGlow');
     filter.setAttribute('x', '-50%');
     filter.setAttribute('y', '-50%');
     filter.setAttribute('width', '200%');
@@ -424,55 +258,114 @@ const RealWaveCanvas = ({
     
     const feGaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
     feGaussianBlur.setAttribute('in', 'SourceGraphic');
-    feGaussianBlur.setAttribute('stdDeviation', '3');
+    feGaussianBlur.setAttribute('stdDeviation', '2');
     
     filter.appendChild(feGaussianBlur);
     defs.appendChild(filter);
     svg.appendChild(defs);
 
-    // Draw center axis line
-    const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    centerLine.setAttribute('x1', 0);
-    centerLine.setAttribute('y1', CENTER_Y);
-    centerLine.setAttribute('x2', CANVAS_WIDTH);
-    centerLine.setAttribute('y2', CENTER_Y);
-    centerLine.setAttribute('stroke', '#CCCCCC');
-    centerLine.setAttribute('stroke-width', '1');
-    centerLine.setAttribute('stroke-dasharray', '5,5');
-    svg.appendChild(centerLine);
+    // Draw center axis line (x line)
+    if (displaySettings.xLine) {
+      const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      centerLine.setAttribute('x1', 0);
+      centerLine.setAttribute('y1', CENTER_Y);
+      centerLine.setAttribute('x2', CANVAS_WIDTH);
+      centerLine.setAttribute('y2', CENTER_Y);
+      centerLine.setAttribute('stroke', '#E0E0E0');
+      centerLine.setAttribute('stroke-width', '1');
+      centerLine.setAttribute('stroke-dasharray', '3,3');
+      svg.appendChild(centerLine);
+    }
+
+    // Draw monthly dividers
+    if (displaySettings.monthlyDividers && activeTimeframe === 'Solar Year') {
+      drawMonthlyDividers(svg, timeframe);
+    }
+
+    // Draw main wave dividers
+    if (displaySettings.mainWaveDividers) {
+      drawWaveDividers(svg, timeframe);
+    }
 
     // Calculate visible cycles
     const viewStartPixel = translateX;
-    const viewEndPixel = translateX + CANVAS_WIDTH;
     const cyclesToDraw = Math.ceil(CANVAS_WIDTH / CANVAS_PX) + 2;
     const startCycle = Math.floor(viewStartPixel / CANVAS_PX) - 1;
     
-    // Draw main timeframe wave(s)
+    // Draw main waves
     for (let cycleIndex = startCycle; cycleIndex < startCycle + cyclesToDraw; cycleIndex++) {
       const cycleOffsetX = cycleIndex * CANVAS_PX;
       drawMainWave(svg, timeframe, cycleOffsetX - translateX, true);
     }
 
-    // Draw nested shorter cycles
+    // Draw nested cycles
     drawNestedWaves(svg, timeframe);
 
-    // Draw current date indicator
-    drawCurrentTimeIndicator(svg, timeframe);
+    // Draw current time indicator
+    if (displaySettings.todayLine) {
+      drawCurrentTimeIndicator(svg, timeframe);
+    }
 
-    // Draw vertical cursor if active
-    drawVerticalCursor(svg);
-
-    // Update current visible date
-    const visibleDate = getCurrentVisibleDate();
-    onDateChange && onDateChange(visibleDate);
+    // Draw mouse hover line
+    if (mousePosition && displaySettings.dashedDateTimeLine) {
+      drawHoverLine(svg);
+    }
   };
 
-  // Draw single main wave using quarter-arcs with CORRECT aspect positions
+  // Draw monthly dividers
+  const drawMonthlyDividers = (svg, timeframe) => {
+    const monthPositions = [];
+    for (let month = 0; month < 12; month++) {
+      const monthProgress = month / 12;
+      const monthPixel = monthProgress * CANVAS_PX;
+      
+      // Check if visible
+      const adjustedPixel = monthPixel - (translateX % CANVAS_PX);
+      if (adjustedPixel >= -50 && adjustedPixel <= CANVAS_WIDTH + 50) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', adjustedPixel);
+        line.setAttribute('y1', 50);
+        line.setAttribute('x2', adjustedPixel);
+        line.setAttribute('y2', CANVAS_HEIGHT - 50);
+        line.setAttribute('stroke', '#D0D0D0');
+        line.setAttribute('stroke-width', '1');
+        line.setAttribute('opacity', '0.6');
+        svg.appendChild(line);
+      }
+    }
+  };
+
+  // Draw wave dividers (quadrant separators)
+  const drawWaveDividers = (svg, timeframe) => {
+    const totalRatio = timeframe.quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
+    let currentX = -(translateX % CANVAS_PX);
+
+    for (let quarter = 0; quarter < 4; quarter++) {
+      const ratio = timeframe.quadrantRatios[quarter];
+      const quarterWidth = (ratio / totalRatio) * CANVAS_PX;
+      const dividerX = currentX + quarterWidth;
+
+      if (dividerX >= -10 && dividerX <= CANVAS_WIDTH + 10) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', dividerX);
+        line.setAttribute('y1', 70);
+        line.setAttribute('x2', dividerX);
+        line.setAttribute('y2', CANVAS_HEIGHT - 70);
+        line.setAttribute('stroke', '#C0C0C0');
+        line.setAttribute('stroke-width', '1');
+        line.setAttribute('stroke-dasharray', '2,4');
+        line.setAttribute('opacity', '0.7');
+        svg.appendChild(line);
+      }
+
+      currentX += quarterWidth;
+    }
+  };
+
+  // Draw main wave with precise aspect positioning
   const drawMainWave = (svg, timeframe, offsetX, isMain = false) => {
     const totalRatio = timeframe.quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
     let currentX = offsetX;
-
-    // Track key aspect positions for CORRECT placement
     const aspectPositions = [];
 
     for (let quarter = 0; quarter < 4; quarter++) {
@@ -481,7 +374,6 @@ const RealWaveCanvas = ({
       const radius = quarterWidth / 2;
       const endX = currentX + quarterWidth;
 
-      // Skip if not visible
       if (endX < -50 || currentX > CANVAS_WIDTH + 50) {
         currentX = endX;
         continue;
@@ -492,51 +384,49 @@ const RealWaveCanvas = ({
       // Create quarter arc path
       let pathData;
       if (quarter === 0 || quarter === 2) {
-        // Upper arcs (0-90°, 180-270°)
         pathData = `M ${currentX} ${CENTER_Y} A ${radius} ${radius} 0 0 1 ${endX} ${CENTER_Y}`;
       } else {
-        // Lower arcs (90-180°, 270-360°)
         pathData = `M ${currentX} ${CENTER_Y} A ${radius} ${radius} 0 0 0 ${endX} ${CENTER_Y}`;
       }
 
-      // Draw the wave segment (grey)
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', pathData);
-      path.setAttribute('stroke', '#999999');
-      path.setAttribute('stroke-width', isMain ? timeframe.strokeMain : timeframe.strokeMain * 0.6);
-      path.setAttribute('fill', 'none');
-      svg.appendChild(path);
+      // Draw the wave segment
+      if (displaySettings.lines) {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('stroke', '#999999');
+        path.setAttribute('stroke-width', isMain ? timeframe.strokeMain : timeframe.strokeMain * 0.6);
+        path.setAttribute('fill', 'none');
+        svg.appendChild(path);
+      }
 
-      // Store CORRECT aspect positions:
+      // Store CORRECT aspect positions
       if (quarter === 0) {
-        // Magenta (0°) - START of wave (left edge)
+        // Magenta (0°) - START 
         aspectPositions.push({ x: currentX, y: CENTER_Y, color: ASPECT_COLORS[0] });
-        // Red (90°) - PEAK of first upper arc
+        // Red (90°) - PEAK 
         aspectPositions.push({ x: centerX, y: CENTER_Y - radius, color: ASPECT_COLORS[1] });
-      } else if (quarter === 1) {
-        // NO NEW ASPECTS - Red already added above
       } else if (quarter === 2) {
-        // Green (180°) - CENTER crossing point (where wave descends through center line)
+        // Green (180°) - CENTER crossing (where wave descends through center)
         aspectPositions.push({ x: currentX, y: CENTER_Y, color: ASPECT_COLORS[2] });
-        // Blue (270°) - BOTTOM of lower arc
+        // Blue (270°) - BOTTOM 
         aspectPositions.push({ x: centerX, y: CENTER_Y + radius, color: ASPECT_COLORS[3] });
-      } else if (quarter === 3) {
-        // NO NEW ASPECTS - Blue already added above
       }
 
       currentX = endX;
     }
 
-    // Add final Magenta (360°) - END of wave (right edge)
+    // Final Magenta (360°)
     aspectPositions.push({ x: currentX, y: CENTER_Y, color: ASPECT_COLORS[0] });
 
-    // Draw all aspect points at CORRECT positions
-    aspectPositions.forEach(aspect => {
-      drawAspectPoint(svg, aspect.x, aspect.y, aspect.color, isMain);
-    });
+    // Draw aspect points
+    if (displaySettings.edges) {
+      aspectPositions.forEach(aspect => {
+        drawAspectPoint(svg, aspect.x, aspect.y, aspect.color, isMain);
+      });
+    }
   };
 
-  // Draw aspect point (colored circle)
+  // Draw professional aspect point
   const drawAspectPoint = (svg, x, y, color, isMain) => {
     if (x < -20 || x > CANVAS_WIDTH + 20) return;
     
@@ -545,13 +435,14 @@ const RealWaveCanvas = ({
     circle.setAttribute('cy', y);
     circle.setAttribute('r', isMain ? '6' : '4');
     circle.setAttribute('fill', color);
-    circle.setAttribute('filter', 'url(#aspectGlow)');
+    circle.setAttribute('stroke', '#FFFFFF');
+    circle.setAttribute('stroke-width', '2');
+    circle.setAttribute('filter', 'url(#professionalGlow)');
     svg.appendChild(circle);
   };
 
-  // Draw nested shorter cycles
+  // Draw nested waves
   const drawNestedWaves = (svg, mainTimeframe) => {
-    // Only draw cycles that are selected and shorter than main timeframe
     const availableTimeframes = allTimeframes || TIMEFRAMES;
     const shorterTFs = availableTimeframes.filter(tf => 
       tf.periodDays < mainTimeframe.periodDays && 
@@ -560,49 +451,42 @@ const RealWaveCanvas = ({
     );
 
     shorterTFs.forEach((nestedTF, index) => {
-      // Calculate how many nested cycles fit in the main cycle
       const cyclesPerMain = mainTimeframe.periodDays / nestedTF.periodDays;
       const nestedCyclePx = CANVAS_PX / cyclesPerMain;
 
-      if (nestedCyclePx < 20) return; // Skip if too small to render
+      if (nestedCyclePx < 20) return;
 
-      // Calculate stroke width (logarithmic scaling)
       const strokeScale = Math.pow(nestedTF.periodDays / mainTimeframe.periodDays, 0.7);
       const scaledStroke = Math.max(0.5, nestedTF.strokeMain * strokeScale);
 
-      // Draw multiple nested cycles aligned to their real phase-0
       const phase0Main = new Date(mainTimeframe.phase0);
       const phase0Nested = new Date(nestedTF.phase0);
-      
-      // Calculate offset based on real phase difference
       const phaseDelta = (phase0Nested.getTime() - phase0Main.getTime()) / (1000 * 60 * 60 * 24);
       const phaseOffsetPx = (phaseDelta / mainTimeframe.periodDays) * CANVAS_PX;
 
       const viewStartPixel = translateX;
-      const viewEndPixel = translateX + CANVAS_WIDTH;
       const nestedCyclesToDraw = Math.ceil(CANVAS_WIDTH / nestedCyclePx) + 2;
       const startNestedCycle = Math.floor((viewStartPixel - phaseOffsetPx) / nestedCyclePx) - 1;
 
       for (let cycleIndex = startNestedCycle; cycleIndex < startNestedCycle + nestedCyclesToDraw; cycleIndex++) {
         const cycleOffsetX = phaseOffsetPx + (cycleIndex * nestedCyclePx);
-        
-        drawScaledWave(svg, nestedTF, cycleOffsetX - translateX, nestedCyclePx, scaledStroke, index);
+        drawScaledWave(svg, nestedTF, cycleOffsetX - translateX, nestedCyclePx, scaledStroke);
       }
     });
   };
 
-  // Draw scaled nested wave - oscillating around center baseline
-  const drawScaledWave = (svg, timeframe, offsetX, scalePx, strokeWidth, nestLevel) => {
+  // Draw scaled nested wave
+  const drawScaledWave = (svg, timeframe, offsetX, scalePx, strokeWidth) => {
+    if (!displaySettings.lines) return;
+    
     const totalRatio = timeframe.quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
     let currentX = offsetX;
-    
-    // All nested waves oscillate around center baseline (no vertical offset)
-    const waveAmplitude = Math.max(15, 40 - (nestLevel * 10)); // Smaller amplitude for nested waves
+    const waveAmplitude = Math.max(15, 30);
 
     for (let quarter = 0; quarter < 4; quarter++) {
       const ratio = timeframe.quadrantRatios[quarter];
       const quarterWidth = (ratio / totalRatio) * scalePx;
-      const radius = quarterWidth / 2;
+      const radius = Math.min(quarterWidth / 2, waveAmplitude);
       const endX = currentX + quarterWidth;
 
       if (endX < -50 || currentX > CANVAS_WIDTH + 50) {
@@ -610,16 +494,11 @@ const RealWaveCanvas = ({
         continue;
       }
 
-      // Create scaled arc around center baseline
       let pathData;
       if (quarter === 0 || quarter === 2) {
-        // Upper arcs - reduced amplitude
-        const arcRadius = Math.min(radius, waveAmplitude);
-        pathData = `M ${currentX} ${CENTER_Y} A ${arcRadius} ${arcRadius} 0 0 1 ${endX} ${CENTER_Y}`;
+        pathData = `M ${currentX} ${CENTER_Y} A ${radius} ${radius} 0 0 1 ${endX} ${CENTER_Y}`;
       } else {
-        // Lower arcs - reduced amplitude  
-        const arcRadius = Math.min(radius, waveAmplitude);
-        pathData = `M ${currentX} ${CENTER_Y} A ${arcRadius} ${arcRadius} 0 0 0 ${endX} ${CENTER_Y}`;
+        pathData = `M ${currentX} ${CENTER_Y} A ${radius} ${radius} 0 0 0 ${endX} ${CENTER_Y}`;
       }
 
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -639,9 +518,8 @@ const RealWaveCanvas = ({
     if (!currentDate) return;
 
     const currentPixel = dateToPixel(currentDate, timeframe) - translateX;
-    
-    // Handle cycling - show indicator if within visible area
     const visiblePositions = [];
+    
     for (let cycle = -1; cycle <= 2; cycle++) {
       const pos = currentPixel + (cycle * CANVAS_PX);
       if (pos >= -10 && pos <= CANVAS_WIDTH + 10) {
@@ -650,7 +528,7 @@ const RealWaveCanvas = ({
     }
 
     visiblePositions.forEach(indicatorX => {
-      // Current time line
+      // Today line
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       line.setAttribute('x1', indicatorX);
       line.setAttribute('y1', 50);
@@ -658,147 +536,139 @@ const RealWaveCanvas = ({
       line.setAttribute('y2', CANVAS_HEIGHT - 50);
       line.setAttribute('stroke', '#FF6B35');
       line.setAttribute('stroke-width', '2');
-      line.setAttribute('filter', 'url(#aspectGlow)');
+      line.setAttribute('opacity', '0.8');
       svg.appendChild(line);
       
-      // Current time dot
+      // Today dot
       const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       dot.setAttribute('cx', indicatorX);
       dot.setAttribute('cy', CENTER_Y);
-      dot.setAttribute('r', '8');
+      dot.setAttribute('r', '6');
       dot.setAttribute('fill', '#FF6B35');
       dot.setAttribute('stroke', '#FFFFFF');
       dot.setAttribute('stroke-width', '2');
-      dot.setAttribute('filter', 'url(#aspectGlow)');
       svg.appendChild(dot);
     });
   };
 
-  useEffect(() => {
-    drawQuarterArcWave();
-  }, [activeTimeframe, currentDate, translateX]);
+  // Draw hover line with date
+  const drawHoverLine = (svg) => {
+    if (!mousePosition) return;
 
-  // Touch/Mouse handlers with double-click support
-  const handleStart = (e) => {
-    isDragging.current = true;
-    const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-    dragStart.current = { x: clientX, time: Date.now() };
-    
-    longPressTimer.current = setTimeout(() => {
-      if (isDragging.current) {
-        onLongPress && onLongPress(clientX);
-      }
-    }, 1500);
+    // Vertical hover line
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', mousePosition.x);
+    line.setAttribute('y1', 0);
+    line.setAttribute('x2', mousePosition.x);
+    line.setAttribute('y2', CANVAS_HEIGHT);
+    line.setAttribute('stroke', '#888888');
+    line.setAttribute('stroke-width', '1');
+    line.setAttribute('stroke-dasharray', '4,4');
+    line.setAttribute('opacity', '0.7');
+    svg.appendChild(line);
   };
 
-  const handleMove = (e) => {
-    if (!isDragging.current) return;
+  // Mouse handlers
+  const handleMouseMove = (e) => {
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
     
-    e.preventDefault();
-    const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-    const deltaX = clientX - dragStart.current.x;
+    setMousePosition({ x, y });
     
-    onDrag && onDrag(deltaX);
-    dragStart.current.x = clientX;
-  };
-
-  const handleEnd = (e) => {
-    if (!isDragging.current) return;
+    // Calculate date at hover position
+    const timeframe = getActiveTimeframe();
+    const hoverPixel = translateX + x;
+    const hoverDateCalc = pixelToDate(hoverPixel, timeframe);
+    setHoverDate(hoverDateCalc);
     
-    isDragging.current = false;
-    clearTimeout(longPressTimer.current);
-    
-    const duration = Date.now() - dragStart.current.time;
-    if (duration < 200) {
-      const clientX = e.type.includes('touch') ? e.changedTouches[0].clientX : e.clientX;
-      onTap && onTap(clientX);
+    if (isDragging.current) {
+      const deltaX = x - dragStart.current.x;
+      onDrag && onDrag(deltaX);
+      dragStart.current.x = x;
     }
   };
 
-  const handleDoubleClick = (e) => {
-    const clientX = e.clientX;
+  const handleMouseDown = (e) => {
+    isDragging.current = true;
     const rect = svgRef.current.getBoundingClientRect();
-    const svgX = clientX - rect.left;
-    
-    setVerticalCursor(svgX);
-    onDoubleClick && onDoubleClick(svgX);
+    dragStart.current.x = e.clientX - rect.left;
   };
 
-  // Draw vertical cursor
-  const drawVerticalCursor = (svg) => {
-    if (verticalCursor === null) return;
-
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', verticalCursor);
-    line.setAttribute('y1', 0);
-    line.setAttribute('x2', verticalCursor);
-    line.setAttribute('y2', CANVAS_HEIGHT);
-    line.setAttribute('stroke', '#FF6B35');
-    line.setAttribute('stroke-width', '3');
-    line.setAttribute('stroke-dasharray', '10,5');
-    line.setAttribute('filter', 'url(#aspectGlow)');
-    svg.appendChild(line);
-
-    // Cursor handle
-    const handle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    handle.setAttribute('cx', verticalCursor);
-    handle.setAttribute('cy', 20);
-    handle.setAttribute('r', '8');
-    handle.setAttribute('fill', '#FF6B35');
-    handle.setAttribute('stroke', '#FFFFFF');
-    handle.setAttribute('stroke-width', '2');
-    handle.setAttribute('style', 'cursor: ew-resize;');
-    svg.appendChild(handle);
+  const handleMouseUp = () => {
+    isDragging.current = false;
   };
+
+  const handleMouseLeave = () => {
+    setMousePosition(null);
+    setHoverDate(null);
+    isDragging.current = false;
+  };
+
+  useEffect(() => {
+    drawProfessionalWave();
+  }, [activeTimeframe, currentDate, translateX, selectedCycles, displaySettings, mousePosition]);
 
   return (
-    <div className="wave-container">
+    <div className="professional-wave-container">
       <svg
         ref={svgRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
-        className="wave-svg"
-        onMouseDown={handleStart}
-        onMouseMove={handleMove}
-        onMouseUp={handleEnd}
-        onMouseLeave={handleEnd}
-        onDoubleClick={handleDoubleClick}
-        onTouchStart={handleStart}
-        onTouchMove={handleMove}
-        onTouchEnd={handleEnd}
+        className="professional-wave-svg"
+        onMouseMove={handleMouseMove}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
       />
+      
+      {/* Hover date display */}
+      {hoverDate && mousePosition && displaySettings.dashedDateTimeLine && (
+        <div 
+          className="hover-date-display"
+          style={{
+            left: `${mousePosition.x}px`,
+            top: `${CANVAS_HEIGHT + 10}px`
+          }}
+        >
+          {hoverDate.toLocaleDateString('sk-SK', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })}
+        </div>
+      )}
     </div>
   );
 };
 
-// Real Timeline Axis Component - COMPLETE functional timeline
-const RealTimelineAxis = ({ activeTimeframe, currentVisibleDate, translateX, allTimeframes }) => {
+// Professional Timeline Component
+const ProfessionalTimeline = ({ activeTimeframe, translateX, allTimeframes }) => {
   const getTimeframe = () => {
-    return allTimeframes?.find(tf => tf.name === activeTimeframe) || TIMEFRAMES.find(tf => tf.name === activeTimeframe) || TIMEFRAMES[1];
+    return allTimeframes?.find(tf => tf.name === activeTimeframe) || 
+           TIMEFRAMES.find(tf => tf.name === activeTimeframe) || 
+           TIMEFRAMES[1];
   };
 
-  const generateCompleteTimeMarkers = () => {
+  const generateTimelineMarkers = () => {
     const timeframe = getTimeframe();
     const markers = [];
     const CANVAS_PX = 1460;
     
-    // Calculate how many cycles to show for continuous timeline
-    const totalViewWidth = 3000; // Extended view for past/future
+    const totalViewWidth = 3000;
     const cyclesToShow = Math.ceil(totalViewWidth / CANVAS_PX) + 2;
     const startCycle = Math.floor((translateX - totalViewWidth/2) / CANVAS_PX) - 1;
 
     if (activeTimeframe === 'Solar Year') {
-      // Generate complete timeline for multiple years
       for (let cycleIndex = startCycle; cycleIndex < startCycle + cyclesToShow; cycleIndex++) {
         const cycleStartDate = new Date(timeframe.phase0);
         cycleStartDate.setFullYear(cycleStartDate.getFullYear() + cycleIndex);
         
-        // Generate months for this year
+        // Generate months
         for (let month = 0; month < 12; month++) {
           const monthDate = new Date(cycleStartDate);
           monthDate.setMonth(cycleStartDate.getMonth() + month);
           
-          // Calculate pixel position
           const deltaMs = monthDate.getTime() - cycleStartDate.getTime();
           const yearMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
           const progress = deltaMs / yearMs;
@@ -813,82 +683,26 @@ const RealTimelineAxis = ({ activeTimeframe, currentVisibleDate, translateX, all
           });
         }
 
-        // Add year transition markers
-        const yearEndDate = new Date(cycleStartDate);
-        yearEndDate.setFullYear(cycleStartDate.getFullYear() + 1);
-        
-        // December marker (year ending)
+        // Year transition markers
         const decemberDate = new Date(cycleStartDate.getFullYear(), 11, 31);
         const decPixel = (cycleIndex + 1) * CANVAS_PX - 50;
         markers.push({
           type: 'year-end',
           date: decemberDate,
           pixel: decPixel,
-          label: `${decemberDate.getFullYear()} ←`,
+          label: `< ${decemberDate.getFullYear()}`,
           year: decemberDate.getFullYear()
         });
 
-        // January marker (year beginning)
         const januaryDate = new Date(cycleStartDate.getFullYear() + 1, 0, 15);
         const janPixel = (cycleIndex + 1) * CANVAS_PX + 50;
         markers.push({
           type: 'year-start',
           date: januaryDate,
           pixel: janPixel,
-          label: `${januaryDate.getFullYear()} →`,
+          label: `${januaryDate.getFullYear()} >`,
           year: januaryDate.getFullYear()
         });
-      }
-    } else if (activeTimeframe === 'Lunar Month') {
-      // Generate timeline for lunar cycles
-      for (let cycleIndex = startCycle; cycleIndex < startCycle + cyclesToShow; cycleIndex++) {
-        const cycleStartDate = new Date(timeframe.phase0);
-        cycleStartDate.setTime(cycleStartDate.getTime() + (cycleIndex * timeframe.periodDays * 24 * 60 * 60 * 1000));
-        
-        // Generate week markers
-        for (let week = 0; week < 4; week++) {
-          const weekDate = new Date(cycleStartDate);
-          weekDate.setTime(weekDate.getTime() + (week * 7 * 24 * 60 * 60 * 1000));
-          
-          const deltaMs = weekDate.getTime() - cycleStartDate.getTime();
-          const cycleMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
-          const progress = deltaMs / cycleMs;
-          const pixelPos = (cycleIndex * CANVAS_PX) + (progress * CANVAS_PX);
-          
-          markers.push({
-            type: 'week',
-            date: weekDate,
-            pixel: pixelPos,
-            label: `W${week + 1}`,
-            cycle: cycleIndex
-          });
-        }
-      }
-    } else {
-      // Generic timeline for other timeframes
-      for (let cycleIndex = startCycle; cycleIndex < startCycle + cyclesToShow; cycleIndex++) {
-        const cycleStartDate = new Date(timeframe.phase0);
-        cycleStartDate.setTime(cycleStartDate.getTime() + (cycleIndex * timeframe.periodDays * 24 * 60 * 60 * 1000));
-        
-        // Generate subdivisions
-        const subdivisions = Math.min(12, Math.max(4, Math.floor(timeframe.periodDays / 10)));
-        for (let sub = 0; sub < subdivisions; sub++) {
-          const subDate = new Date(cycleStartDate);
-          subDate.setTime(subDate.getTime() + (sub * (timeframe.periodDays / subdivisions) * 24 * 60 * 60 * 1000));
-          
-          const deltaMs = subDate.getTime() - cycleStartDate.getTime();
-          const cycleMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
-          const progress = deltaMs / cycleMs;
-          const pixelPos = (cycleIndex * CANVAS_PX) + (progress * CANVAS_PX);
-          
-          markers.push({
-            type: 'subdivision',
-            date: subDate,
-            pixel: pixelPos,
-            label: sub + 1,
-            cycle: cycleIndex
-          });
-        }
       }
     }
     
@@ -898,10 +712,10 @@ const RealTimelineAxis = ({ activeTimeframe, currentVisibleDate, translateX, all
     );
   };
 
-  const markers = generateCompleteTimeMarkers();
+  const markers = generateTimelineMarkers();
 
   return (
-    <div className="timeline-axis">
+    <div className="professional-timeline">
       <div className="timeline-track">
         {markers.map((marker, index) => (
           <div
@@ -913,26 +727,12 @@ const RealTimelineAxis = ({ activeTimeframe, currentVisibleDate, translateX, all
             <div className="marker-label">{marker.label}</div>
           </div>
         ))}
+        
+        {/* Current date indicator on timeline */}
+        <div className="current-date-indicator">
+          4.6
+        </div>
       </div>
-    </div>
-  );
-};
-
-// Right Sidebar Component
-const RightSidebar = ({ onSettings, onProfile }) => {
-  return (
-    <div className="right-sidebar">
-      <button className="sidebar-btn settings-btn" onClick={onSettings}>
-        <div className="btn-icon">⚙</div>
-      </button>
-      
-      <button className="sidebar-btn wave-btn">
-        <div className="btn-icon wave-icon">S</div>
-      </button>
-      
-      <button className="sidebar-btn profile-btn" onClick={onProfile}>
-        <div className="btn-icon">👤</div>
-      </button>
     </div>
   );
 };
@@ -943,14 +743,21 @@ function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentVisibleDate, setCurrentVisibleDate] = useState(new Date());
   const [translateX, setTranslateX] = useState(0);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showCustomCreator, setShowCustomCreator] = useState(false);
-  const [showCycleEditor, setShowCycleEditor] = useState(false);
-  const [editingCycle, setEditingCycle] = useState(null);
   const [customTimeframes, setCustomTimeframes] = useState([]);
-  const [selectedCycles, setSelectedCycles] = useState(['Lunar Month', 'Solar Day', 'Quarter', 'Mercury Synodic', 'Venus Synodic']); // Default 5 cycles
+  const [selectedCycles, setSelectedCycles] = useState(['Lunar Month', 'Solar Day', 'Quarter']);
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  
+  // Display settings matching the screenshot
+  const [displaySettings, setDisplaySettings] = useState({
+    lines: true,
+    dashedDateTimeLine: true,
+    monthlyDividers: true,
+    edges: true,
+    todayLine: true,
+    mainWaveDividers: true,
+    xLine: true
+  });
 
-  // Combine predefined and custom timeframes
   const allTimeframes = [...TIMEFRAMES, ...customTimeframes];
 
   useEffect(() => {
@@ -961,35 +768,11 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleCycleToggle = (cycleName) => {
-    setSelectedCycles(prev => 
-      prev.includes(cycleName) 
-        ? prev.filter(name => name !== cycleName)
-        : [...prev, cycleName]
-    );
-  };
-
-  const handleCreateCustomCycle = (newCycle) => {
-    setCustomTimeframes(prev => [...prev, newCycle]);
-    // Auto-select the new cycle
-    setSelectedCycles(prev => [...prev, newCycle.name]);
-  };
-
-  const handleEditCycle = (cycle) => {
-    setEditingCycle(cycle);
-    setShowCycleEditor(true);
-  };
-
-  const handleSaveCycle = (updatedCycle) => {
-    if (TIMEFRAMES.find(tf => tf.name === updatedCycle.name)) {
-      // Update predefined timeframe (not recommended but possible)
-      console.log('Editing predefined cycle:', updatedCycle);
-    } else {
-      // Update custom timeframe
-      setCustomTimeframes(prev => 
-        prev.map(tf => tf.name === updatedCycle.name ? updatedCycle : tf)
-      );
-    }
+  const handleToggleDisplay = (setting) => {
+    setDisplaySettings(prev => ({
+      ...prev,
+      [setting]: !prev[setting]
+    }));
   };
 
   const handleTimeFrameChange = (newTimeFrame) => {
@@ -998,7 +781,7 @@ function App() {
   };
 
   const handleDrag = (deltaX) => {
-    setTranslateX(prev => prev - deltaX); // Allow negative for past navigation
+    setTranslateX(prev => prev - deltaX);
   };
 
   const handleArrowJump = (direction) => {
@@ -1008,20 +791,6 @@ function App() {
 
   const handleDateChange = (newDate) => {
     setCurrentVisibleDate(newDate);
-  };
-
-  const handleDoubleClick = (svgX) => {
-    // Calculate date at cursor position
-    const timeframe = allTimeframes.find(tf => tf.name === activeTimeframe);
-    if (timeframe) {
-      const cursorPixel = translateX + svgX;
-      const phase0 = new Date(timeframe.phase0);
-      const cycleProgress = (cursorPixel % 1460) / 1460;
-      const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
-      const deltaMs = cycleProgress * periodMs;
-      const cursorDate = new Date(phase0.getTime() + deltaMs);
-      setCurrentVisibleDate(cursorDate);
-    }
   };
 
   const formatVisibleDate = () => {
@@ -1039,45 +808,18 @@ function App() {
     });
   };
 
-  // Get available cycles for settings (shorter than active timeframe)
-  const getAvailableCycles = () => {
-    const activeTimeframePeriod = allTimeframes.find(tf => tf.name === activeTimeframe)?.periodDays || 365;
-    return allTimeframes.filter(tf => tf.periodDays < activeTimeframePeriod && tf.name !== activeTimeframe);
-  };
-
   return (
-    <div className="App">
-      {/* Settings Modal */}
-      <SettingsModal
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        availableCycles={getAvailableCycles()}
-        selectedCycles={selectedCycles}
-        onCycleToggle={handleCycleToggle}
-        onCreateCustom={() => setShowCustomCreator(true)}
-        onEditCycle={handleEditCycle}
-      />
-
-      {/* Custom Cycle Creator */}
-      <CustomCycleCreator
-        isOpen={showCustomCreator}
-        onClose={() => setShowCustomCreator(false)}
-        onCreateCycle={handleCreateCustomCycle}
-      />
-
-      {/* Cycle Editor */}
-      <CycleEditor
-        isOpen={showCycleEditor}
-        cycle={editingCycle}
-        onClose={() => {
-          setShowCycleEditor(false);
-          setEditingCycle(null);
-        }}
-        onSaveCycle={handleSaveCycle}
+    <div className="App professional-app">
+      {/* Left Controls Panel */}
+      <LeftControlsPanel
+        displaySettings={displaySettings}
+        onToggleDisplay={handleToggleDisplay}
+        isCollapsed={leftPanelCollapsed}
+        onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
       />
 
       {/* Header */}
-      <header className="app-header">
+      <header className="professional-header">
         <div className="header-left">
           <span className="date-badge">{formatVisibleDate()}</span>
           <span className="time-badge">{formatVisibleTime()}</span>
@@ -1087,6 +829,7 @@ function App() {
         
         <div className="header-right">
           <div className="moon-phase">🌓</div>
+          <span className="phase-text">1/4</span>
           <select 
             className="timeframe-select"
             value={activeTimeframe}
@@ -1094,7 +837,7 @@ function App() {
           >
             {allTimeframes.map(tf => (
               <option key={tf.name} value={tf.name}>
-                {tf.name}
+                {tf.name === 'Solar Year' ? '1 Sol. Year' : tf.name}
               </option>
             ))}
           </select>
@@ -1102,51 +845,59 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="main-content">
+      <main className="professional-main">
         <div className="canvas-area">
           <button 
             className="nav-arrow nav-left"
             onClick={() => handleArrowJump(-1)}
-            title="Previous cycle"
           >
             ◁
           </button>
           
-          <RealWaveCanvas
+          <ProfessionalWaveCanvas
             activeTimeframe={activeTimeframe}
             currentDate={currentDate}
             translateX={translateX}
             selectedCycles={selectedCycles}
             allTimeframes={allTimeframes}
+            displaySettings={displaySettings}
             onDrag={handleDrag}
             onDateChange={handleDateChange}
-            onDoubleClick={handleDoubleClick}
-            onTap={(x) => console.log('Tap at:', x)}
-            onLongPress={(x) => console.log('Long press at:', x)}
           />
           
           <button 
             className="nav-arrow nav-right"
             onClick={() => handleArrowJump(1)}
-            title="Next cycle"
           >
             ▷
           </button>
         </div>
         
-        <RealTimelineAxis
+        <ProfessionalTimeline
           activeTimeframe={activeTimeframe}
-          currentVisibleDate={currentVisibleDate}
           translateX={translateX}
           allTimeframes={allTimeframes}
         />
       </main>
 
       {/* Right Sidebar */}
-      <RightSidebar
-        onSettings={() => setShowSettings(true)}
-        onProfile={() => console.log('Profile')}
-      />
+      <div className="professional-right-sidebar">
+        <button className="sidebar-btn">
+          <div className="btn-icon">⚙</div>
+        </button>
+        
+        <button className="sidebar-btn active">
+          <div className="btn-icon wave-icon">
+            <div className="wave-line"></div>
+            <div className="wave-line"></div>
+            <div className="wave-line"></div>
+          </div>
+        </button>
+        
+        <button className="sidebar-btn">
+          <div className="btn-icon">👤</div>
+        </button>
+      </div>
     </div>
   );
 }
