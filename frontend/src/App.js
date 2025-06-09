@@ -827,8 +827,7 @@ const ProfessionalWaveCanvas = ({
 const ProfessionalTimeline = ({ activeTimeframe, translateX, allTimeframes }) => {
   const getTimeframe = () => {
     return allTimeframes?.find(tf => tf.name === activeTimeframe) || 
-           TIMEFRAMES.find(tf => tf.name === activeTimeframe) || 
-           TIMEFRAMES[1];
+           allTimeframes?.[1];
   };
 
   // Calculate exact pixel position for any date in Solar Year
