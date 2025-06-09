@@ -552,7 +552,8 @@ const RealWaveCanvas = ({
   // Draw nested shorter cycles
   const drawNestedWaves = (svg, mainTimeframe) => {
     // Only draw cycles that are selected and shorter than main timeframe
-    const shorterTFs = TIMEFRAMES.filter(tf => 
+    const availableTimeframes = allTimeframes || TIMEFRAMES;
+    const shorterTFs = availableTimeframes.filter(tf => 
       tf.periodDays < mainTimeframe.periodDays && 
       tf.name !== mainTimeframe.name &&
       selectedCycles.includes(tf.name)
