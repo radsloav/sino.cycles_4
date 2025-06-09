@@ -242,12 +242,12 @@ const RealWaveCanvas = ({
     onDateChange && onDateChange(visibleDate);
   };
 
-  // Draw single main wave using quarter-arcs with quadrant ratios
+  // Draw single main wave using quarter-arcs with CORRECT aspect positions
   const drawMainWave = (svg, timeframe, offsetX, isMain = false) => {
     const totalRatio = timeframe.quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
     let currentX = offsetX;
 
-    // Track key aspect positions for correct placement
+    // Track key aspect positions for CORRECT placement
     const aspectPositions = [];
 
     for (let quarter = 0; quarter < 4; quarter++) {
@@ -282,28 +282,30 @@ const RealWaveCanvas = ({
       path.setAttribute('fill', 'none');
       svg.appendChild(path);
 
-      // Store correct aspect positions
+      // Store CORRECT aspect positions:
       if (quarter === 0) {
-        // Magenta (0°) - start of wave
+        // Magenta (0°) - START of wave (left edge)
         aspectPositions.push({ x: currentX, y: CENTER_Y, color: ASPECT_COLORS[0] });
-      } else if (quarter === 1) {
-        // Red (90°) - peak of first upper arc
+        // Red (90°) - PEAK of first upper arc
         aspectPositions.push({ x: centerX, y: CENTER_Y - radius, color: ASPECT_COLORS[1] });
+      } else if (quarter === 1) {
+        // NO NEW ASPECTS - Red already added above
       } else if (quarter === 2) {
-        // Green (180°) - crossing center line
+        // Green (180°) - CENTER crossing point (where wave descends through center line)
         aspectPositions.push({ x: currentX, y: CENTER_Y, color: ASPECT_COLORS[2] });
-      } else if (quarter === 3) {
-        // Blue (270°) - bottom of lower arc
+        // Blue (270°) - BOTTOM of lower arc
         aspectPositions.push({ x: centerX, y: CENTER_Y + radius, color: ASPECT_COLORS[3] });
+      } else if (quarter === 3) {
+        // NO NEW ASPECTS - Blue already added above
       }
 
       currentX = endX;
     }
 
-    // Add final Magenta (360°) - end of wave
+    // Add final Magenta (360°) - END of wave (right edge)
     aspectPositions.push({ x: currentX, y: CENTER_Y, color: ASPECT_COLORS[0] });
 
-    // Draw all aspect points at correct positions
+    // Draw all aspect points at CORRECT positions
     aspectPositions.forEach(aspect => {
       drawAspectPoint(svg, aspect.x, aspect.y, aspect.color, isMain);
     });
