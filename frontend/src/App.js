@@ -513,17 +513,19 @@ const ProfessionalWaveCanvas = ({
     }
   };
 
-  // Draw main wave with PRECISE aspect positioning for Solar Year
+  // Draw main wave with PRECISE aspect positioning using backend quadrant ratios
   const drawMainWave = (svg, timeframe, offsetX, isMain = false) => {
-    if (!lineSettings.mainWaveLines) return;
+    if (!lineSettings.mainWaveLines || !timeframe?.backendData) return;
     
-    const totalRatio = timeframe.quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
+    const backendCycle = timeframe.backendData;
+    const quadrantRatios = backendCycle.quadrant_ratios;
+    const totalRatio = quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
     let currentX = offsetX;
     const aspectPositions = [];
     const colors = timeframe.colors || ['#FF0080', '#FF4444', '#00FF44', '#0080FF'];
 
     for (let quarter = 0; quarter < 4; quarter++) {
-      const ratio = timeframe.quadrantRatios[quarter];
+      const ratio = quadrantRatios[quarter];
       const quarterWidth = (ratio / totalRatio) * CANVAS_PX;
       const radius = quarterWidth / 2;
       const endX = currentX + quarterWidth;
@@ -535,44 +537,46 @@ const ProfessionalWaveCanvas = ({
 
       const centerX = currentX + radius;
 
-      // Create quarter arc path
+      // Create quarter arc path - proper wave form
       let pathData;
       if (quarter === 0 || quarter === 2) {
+        // Quadrants 0 and 2: ascending arc
         pathData = `M ${currentX} ${CENTER_Y} A ${radius} ${radius} 0 0 1 ${endX} ${CENTER_Y}`;
       } else {
+        // Quadrants 1 and 3: descending arc
         pathData = `M ${currentX} ${CENTER_Y} A ${radius} ${radius} 0 0 0 ${endX} ${CENTER_Y}`;
       }
 
       // Draw the wave segment
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', pathData);
-      path.setAttribute('stroke', '#999999');
-      path.setAttribute('stroke-width', isMain ? timeframe.strokeMain : timeframe.strokeMain * 0.6);
+      path.setAttribute('stroke', isMain ? backendCycle.color : '#999999');
+      path.setAttribute('stroke-width', isMain ? backendCycle.base_stroke : backendCycle.base_stroke * 0.6);
       path.setAttribute('fill', 'none');
       svg.appendChild(path);
 
-      // Store CORRECT aspect positions for Solar Year:
+      // Store PRECISE aspect positions using backend quadrant ratios:
       if (quarter === 0) {
-        // Magenta (0°) - 21. March (START of year)
+        // Magenta (0°) - START of cycle (e.g., 21. March for Solar Year)
         aspectPositions.push({ x: currentX, y: CENTER_Y, color: colors[0] });
       } else if (quarter === 1) {
-        // Red (90°) - PEAK (around June solstice)
+        // Red (90°) - PEAK of first half (e.g., June solstice)
         aspectPositions.push({ x: centerX, y: CENTER_Y - radius, color: colors[1] });
       } else if (quarter === 2) {
-        // Green (180°) - CENTER crossing (around September equinox) 
+        // Green (180°) - CENTER crossing (e.g., September equinox)
         aspectPositions.push({ x: currentX, y: CENTER_Y, color: colors[2] });
       } else if (quarter === 3) {
-        // Blue (270°) - BOTTOM (around December solstice)
+        // Blue (270°) - BOTTOM of second half (e.g., December solstice)
         aspectPositions.push({ x: centerX, y: CENTER_Y + radius, color: colors[3] });
       }
 
       currentX = endX;
     }
 
-    // Final Magenta (360°) - 21. March NEXT YEAR
+    // Final Magenta (360°/0°) - END/START of next cycle
     aspectPositions.push({ x: currentX, y: CENTER_Y, color: colors[0] });
 
-    // Draw aspect points
+    // Draw aspect points with precise positioning
     if (lineSettings.aspectPoints) {
       aspectPositions.forEach(aspect => {
         drawAspectPoint(svg, aspect.x, aspect.y, aspect.color, isMain);
