@@ -135,23 +135,25 @@ body {
   font-weight: 400;
 }
 
-/* Curves Section */
+/* Curves Section Specific */
 .curves-summary {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 123, 255, 0.05);
   padding: 1rem;
   border-radius: 8px;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(0, 123, 255, 0.1);
 }
 
 .curves-summary p {
-  color: #00FF88;
+  color: #007bff;
   font-size: 0.9rem;
   margin: 0;
+  font-weight: 500;
 }
 
-.settings-btn {
+.manage-cycles-btn {
   width: 100%;
-  background: linear-gradient(45deg, #007bff, #00FF88);
+  background: linear-gradient(45deg, #007bff, #0056b3);
   color: white;
   border: none;
   padding: 0.75rem 1rem;
@@ -160,19 +162,21 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   margin-bottom: 1.5rem;
+  font-weight: 500;
 }
 
-.settings-btn:hover {
+.manage-cycles-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
 }
 
-.quick-toggles h4 {
-  color: #CCCCCC;
-  font-size: 0.8rem;
+.quick-curve-toggles h4 {
+  color: #666;
+  font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 1rem;
+  font-weight: 600;
 }
 
 /* Settings Toggle Switch */
