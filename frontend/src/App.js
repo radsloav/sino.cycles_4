@@ -1073,6 +1073,19 @@ function App() {
 
   return (
     <div className="App professional-app">
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner">
+            <div className="sino-logo">
+              <span className="logo-s">S</span>
+              <div className="logo-wave">~</div>
+              <span className="logo-no">iNo</span>
+            </div>
+            <p>Načítavam presné cykly...</p>
+          </div>
+        </div>
+      )}
+
       {/* Right Settings Panel */}
       <RightSettingsPanel
         isOpen={showRightSettings}
@@ -1138,16 +1151,18 @@ function App() {
             ◁
           </button>
           
-          <ProfessionalWaveCanvas
-            activeTimeframe={activeTimeframe}
-            currentDate={currentDate}
-            translateX={translateX}
-            selectedCycles={selectedCycles}
-            allTimeframes={allTimeframes}
-            lineSettings={lineSettings}
-            onDrag={handleDrag}
-            onDateChange={handleDateChange}
-          />
+          {!loading && allTimeframes.length > 0 && (
+            <ProfessionalWaveCanvas
+              activeTimeframe={activeTimeframe}
+              currentDate={currentDate}
+              translateX={translateX}
+              selectedCycles={selectedCycles}
+              allTimeframes={allTimeframes}
+              lineSettings={lineSettings}
+              onDrag={handleDrag}
+              onDateChange={handleDateChange}
+            />
+          )}
           
           <button 
             className="nav-arrow nav-right"
@@ -1157,11 +1172,13 @@ function App() {
           </button>
         </div>
         
-        <ProfessionalTimeline
-          activeTimeframe={activeTimeframe}
-          translateX={translateX}
-          allTimeframes={allTimeframes}
-        />
+        {!loading && allTimeframes.length > 0 && (
+          <ProfessionalTimeline
+            activeTimeframe={activeTimeframe}
+            translateX={translateX}
+            allTimeframes={allTimeframes}
+          />
+        )}
       </main>
 
       {/* Right Sidebar */}
