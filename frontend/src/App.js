@@ -366,7 +366,7 @@ const RealWaveCanvas = ({
 
   // Get active timeframe data
   const getActiveTimeframe = () => {
-    return TIMEFRAMES.find(tf => tf.name === activeTimeframe) || TIMEFRAMES[1];
+    return allTimeframes?.find(tf => tf.name === activeTimeframe) || TIMEFRAMES.find(tf => tf.name === activeTimeframe) || TIMEFRAMES[1];
   };
 
   // Convert date to pixel position within timeframe
