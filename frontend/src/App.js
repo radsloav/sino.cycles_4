@@ -343,6 +343,7 @@ const RealWaveCanvas = ({
   currentDate, 
   translateX, 
   selectedCycles,
+  allTimeframes,
   onDrag, 
   onTap, 
   onLongPress,
