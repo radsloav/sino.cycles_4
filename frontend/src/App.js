@@ -12,23 +12,26 @@ const TIMEFRAMES = [
     phase0: '2000-03-21T00:00:00Z',
     strokeMain: 6,
     quadrantRatios: [6480, 6480, 6480, 6480],
-    editable: false
+    editable: false,
+    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF'] // M-R-G-B
   },
   {
     name: 'Solar Year', 
-    periodDays: 365.2422,
+    periodDays: 365,  // Exactly 365 days (21 Mar to 21 Mar)
     phase0: '2025-03-21T00:00:00Z',
     strokeMain: 4,
-    quadrantRatios: [93, 92, 89, 91],
-    editable: true
+    quadrantRatios: [91, 94, 89, 91], // Spring, Summer, Autumn, Winter
+    editable: true,
+    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
   },
   {
     name: 'Quarter',
-    periodDays: 91.31,
+    periodDays: 91.25,
     phase0: '2025-03-21T00:00:00Z',
     strokeMain: 3.5,
     quadrantRatios: [23, 23, 23, 22],
-    editable: true
+    editable: true,
+    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
   },
   {
     name: 'Lunar Month',
@@ -36,7 +39,8 @@ const TIMEFRAMES = [
     phase0: '2025-03-16T17:10:00Z',
     strokeMain: 3,
     quadrantRatios: [7.38, 7.38, 7.38, 7.38],
-    editable: true
+    editable: true,
+    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
   },
   {
     name: 'Mercury Synodic',
@@ -44,7 +48,8 @@ const TIMEFRAMES = [
     phase0: '2025-01-15T00:00:00Z',
     strokeMain: 2.8,
     quadrantRatios: [29, 29, 29, 28],
-    editable: true
+    editable: true,
+    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
   },
   {
     name: 'Venus Synodic',
@@ -52,7 +57,8 @@ const TIMEFRAMES = [
     phase0: '2025-01-10T00:00:00Z',
     strokeMain: 3.2,
     quadrantRatios: [146, 146, 146, 145],
-    editable: true
+    editable: true,
+    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
   },
   {
     name: 'Solar Day',
@@ -60,7 +66,8 @@ const TIMEFRAMES = [
     phase0: '2025-01-01T06:00:00Z',
     strokeMain: 2,
     quadrantRatios: [6, 6, 6, 6],
-    editable: true
+    editable: true,
+    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
   }
 ];
 
@@ -73,13 +80,215 @@ const SiNoLogo = () => (
   </div>
 );
 
-// Left Controls Panel
-const LeftControlsPanel = ({ 
-  displaySettings, 
-  onToggleDisplay,
+// Custom Cycle Creator with Colors
+const CustomCycleCreator = ({ isOpen, onClose, onCreateCycle }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    periodDays: '',
+    phase0: '2025-03-21T00:00:00',
+    strokeMain: 3,
+    quadrantRatios: [25, 25, 25, 25],
+    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF'] // M-R-G-B default
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const newCycle = {
+      ...formData,
+      periodDays: parseFloat(formData.periodDays),
+      quadrantRatios: formData.quadrantRatios.map(r => parseInt(r)),
+      phase0: formData.phase0 + 'Z',
+      editable: true
+    };
+    onCreateCycle(newCycle);
+    onClose();
+    setFormData({
+      name: '',
+      periodDays: '',
+      phase0: '2025-03-21T00:00:00',
+      strokeMain: 3,
+      quadrantRatios: [25, 25, 25, 25],
+      colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
+    });
+  };
+
+  const handleColorChange = (index, color) => {
+    const newColors = [...formData.colors];
+    newColors[index] = color;
+    setFormData({...formData, colors: newColors});
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="custom-cycle-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Create Custom Cycle</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="cycle-form">
+          <div className="form-group">
+            <label>Cycle Name:</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              required
+              placeholder="e.g., Mars Synodic"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Period (days):</label>
+            <input
+              type="number"
+              step="0.001"
+              value={formData.periodDays}
+              onChange={(e) => setFormData({...formData, periodDays: e.target.value})}
+              required
+              placeholder="e.g., 779.94"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Start Date (Phase 0°):</label>
+            <input
+              type="datetime-local"
+              value={formData.phase0}
+              onChange={(e) => setFormData({...formData, phase0: e.target.value})}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Stroke Width:</label>
+            <input
+              type="range"
+              min="1"
+              max="8"
+              step="0.1"
+              value={formData.strokeMain}
+              onChange={(e) => setFormData({...formData, strokeMain: parseFloat(e.target.value)})}
+            />
+            <span>{formData.strokeMain}px</span>
+          </div>
+
+          <div className="form-group">
+            <label>Phase Colors (M-R-G-B):</label>
+            <div className="color-inputs">
+              {['Magenta (0°)', 'Red (90°)', 'Green (180°)', 'Blue (270°)'].map((phase, index) => (
+                <div key={index} className="color-input-group">
+                  <span className="color-label">{phase}</span>
+                  <input
+                    type="color"
+                    value={formData.colors[index]}
+                    onChange={(e) => handleColorChange(index, e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Quadrant Ratios:</label>
+            <div className="quadrant-inputs">
+              {formData.quadrantRatios.map((ratio, index) => (
+                <input
+                  key={index}
+                  type="number"
+                  value={ratio}
+                  onChange={(e) => {
+                    const newRatios = [...formData.quadrantRatios];
+                    newRatios[index] = parseInt(e.target.value) || 0;
+                    setFormData({...formData, quadrantRatios: newRatios});
+                  }}
+                  placeholder={`Q${index + 1}`}
+                  min="1"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <button type="button" onClick={onClose}>Cancel</button>
+            <button type="submit">Create Cycle</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Curve Settings Modal
+const CurveSettingsModal = ({ isOpen, onClose, availableCycles, selectedCycles, onCycleToggle, onEditCycle, onCreateCustom }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="settings-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Curve Settings</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="modal-content">
+          <h3>Visible Cycles</h3>
+          <div className="cycles-list">
+            {availableCycles.map(cycle => (
+              <div key={cycle.name} className="cycle-item">
+                <input
+                  type="checkbox"
+                  id={cycle.name}
+                  checked={selectedCycles.includes(cycle.name)}
+                  onChange={() => onCycleToggle(cycle.name)}
+                />
+                <label htmlFor={cycle.name}>
+                  <div className="cycle-info">
+                    <span className="cycle-name">{cycle.name}</span>
+                    <span className="cycle-period">({cycle.periodDays.toFixed(1)} days)</span>
+                  </div>
+                  <div className="cycle-colors">
+                    {cycle.colors.map((color, index) => (
+                      <div key={index} className="color-dot" style={{backgroundColor: color}}></div>
+                    ))}
+                  </div>
+                </label>
+                {cycle.editable && (
+                  <button 
+                    className="edit-cycle-btn"
+                    onClick={() => onEditCycle(cycle)}
+                    title="Edit cycle"
+                  >
+                    ✏️
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          <button className="create-custom-btn" onClick={onCreateCustom}>
+            + Create Custom Cycle
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Enhanced Left Controls Panel
+const EnhancedLeftControlsPanel = ({ 
+  lineSettings, 
+  onToggleLineSettings,
+  curveSettings,
+  onToggleCurveSettings,
+  onOpenCurveSettings,
   isCollapsed,
   onToggleCollapse 
 }) => {
+  const [activeSection, setActiveSection] = useState('lines');
+
   return (
     <div className={`left-controls ${isCollapsed ? 'collapsed' : ''}`}>
       <button 
@@ -91,105 +300,173 @@ const LeftControlsPanel = ({
       
       {!isCollapsed && (
         <div className="controls-content">
-          <div className="control-group">
-            <div className="control-item">
-              <span className="control-label">lines</span>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={displaySettings.lines}
-                  onChange={() => onToggleDisplay('lines')}
-                />
-                <span className="slider"></span>
-              </label>
-            </div>
-
-            <div className="control-item">
-              <span className="control-label">dashed date-time line</span>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={displaySettings.dashedDateTimeLine}
-                  onChange={() => onToggleDisplay('dashedDateTimeLine')}
-                />
-                <span className="slider"></span>
-              </label>
-            </div>
-
-            <div className="control-item">
-              <span className="control-label">monthly dividers</span>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={displaySettings.monthlyDividers}
-                  onChange={() => onToggleDisplay('monthlyDividers')}
-                />
-                <span className="slider"></span>
-              </label>
-            </div>
-
-            <div className="control-item">
-              <span className="control-label">edges</span>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={displaySettings.edges}
-                  onChange={() => onToggleDisplay('edges')}
-                />
-                <span className="slider"></span>
-              </label>
-            </div>
-
-            <div className="control-item">
-              <span className="control-label">today line</span>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={displaySettings.todayLine}
-                  onChange={() => onToggleDisplay('todayLine')}
-                />
-                <span className="slider"></span>
-              </label>
-            </div>
-
-            <div className="control-item">
-              <span className="control-label">main wave dividers</span>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={displaySettings.mainWaveDividers}
-                  onChange={() => onToggleDisplay('mainWaveDividers')}
-                />
-                <span className="slider"></span>
-              </label>
-            </div>
-
-            <div className="control-item">
-              <span className="control-label">x line</span>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={displaySettings.xLine}
-                  onChange={() => onToggleDisplay('xLine')}
-                />
-                <span className="slider"></span>
-              </label>
-            </div>
+          {/* Section Tabs */}
+          <div className="section-tabs">
+            <button 
+              className={`tab-btn ${activeSection === 'lines' ? 'active' : ''}`}
+              onClick={() => setActiveSection('lines')}
+            >
+              Lines
+            </button>
+            <button 
+              className={`tab-btn ${activeSection === 'curves' ? 'active' : ''}`}
+              onClick={() => setActiveSection('curves')}
+            >
+              Curves
+            </button>
           </div>
+
+          {/* Lines Section */}
+          {activeSection === 'lines' && (
+            <div className="control-group">
+              <div className="section-title">Line Settings</div>
+              
+              <div className="control-item">
+                <span className="control-label">main wave lines</span>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={lineSettings.mainWaveLines}
+                    onChange={() => onToggleLineSettings('mainWaveLines')}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+
+              <div className="control-item">
+                <span className="control-label">nested wave lines</span>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={lineSettings.nestedWaveLines}
+                    onChange={() => onToggleLineSettings('nestedWaveLines')}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+
+              <div className="control-item">
+                <span className="control-label">dashed date-time line</span>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={lineSettings.dashedDateTimeLine}
+                    onChange={() => onToggleLineSettings('dashedDateTimeLine')}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+
+              <div className="control-item">
+                <span className="control-label">monthly dividers</span>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={lineSettings.monthlyDividers}
+                    onChange={() => onToggleLineSettings('monthlyDividers')}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+
+              <div className="control-item">
+                <span className="control-label">wave dividers</span>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={lineSettings.waveDividers}
+                    onChange={() => onToggleLineSettings('waveDividers')}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+
+              <div className="control-item">
+                <span className="control-label">center axis line</span>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={lineSettings.centerAxisLine}
+                    onChange={() => onToggleLineSettings('centerAxisLine')}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+
+              <div className="control-item">
+                <span className="control-label">today line</span>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={lineSettings.todayLine}
+                    onChange={() => onToggleLineSettings('todayLine')}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+
+              <div className="control-item">
+                <span className="control-label">aspect points</span>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={lineSettings.aspectPoints}
+                    onChange={() => onToggleLineSettings('aspectPoints')}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Curves Section */}
+          {activeSection === 'curves' && (
+            <div className="control-group">
+              <div className="section-title">Curve Settings</div>
+              
+              <div className="curves-summary">
+                <p>{Object.values(curveSettings).filter(v => v).length} cycles visible</p>
+              </div>
+
+              <button 
+                className="settings-btn"
+                onClick={onOpenCurveSettings}
+              >
+                Manage Cycles & Visibility
+              </button>
+
+              <div className="quick-toggles">
+                <h4>Quick Toggles:</h4>
+                {Object.entries(curveSettings).slice(0, 5).map(([cycleName, isVisible]) => (
+                  <div key={cycleName} className="control-item">
+                    <span className="control-label">{cycleName}</span>
+                    <label className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={isVisible}
+                        onChange={() => onToggleCurveSettings(cycleName)}
+                      />
+                      <span className="slider"></span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 };
 
-// Professional Wave Canvas Component
+// Professional Wave Canvas with Correct Dating
 const ProfessionalWaveCanvas = ({ 
   activeTimeframe, 
   currentDate, 
   translateX, 
   selectedCycles,
   allTimeframes,
-  displaySettings,
+  lineSettings,
   onDrag, 
   onDateChange,
   onHover
@@ -204,9 +481,6 @@ const ProfessionalWaveCanvas = ({
   const CANVAS_WIDTH = 1200;
   const CANVAS_HEIGHT = 400;
   const CENTER_Y = CANVAS_HEIGHT / 2;
-  
-  // Professional aspect colors
-  const ASPECT_COLORS = ['#FF0080', '#FF4444', '#00FF44', '#0080FF'];
 
   const getActiveTimeframe = () => {
     return allTimeframes?.find(tf => tf.name === activeTimeframe) || 
@@ -214,31 +488,55 @@ const ProfessionalWaveCanvas = ({
            TIMEFRAMES[1];
   };
 
+  // Calculate correct date to pixel for Solar Year (21 Mar to 21 Mar)
   const dateToPixel = (date, timeframe) => {
     const phase0 = new Date(timeframe.phase0);
-    const deltaMs = date.getTime() - phase0.getTime();
-    const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
     
-    let normalizedDelta = deltaMs;
-    if (deltaMs < 0) {
-      const cyclesBefore = Math.ceil(Math.abs(deltaMs) / periodMs);
-      normalizedDelta = deltaMs + (cyclesBefore * periodMs);
+    if (timeframe.name === 'Solar Year') {
+      // For Solar Year: each wave is exactly 365 days from 21 Mar to 21 Mar
+      const deltaMs = date.getTime() - phase0.getTime();
+      const yearMs = 365 * 24 * 60 * 60 * 1000; // Exactly 365 days
+      
+      let normalizedDelta = deltaMs;
+      if (deltaMs < 0) {
+        const yearsBefore = Math.ceil(Math.abs(deltaMs) / yearMs);
+        normalizedDelta = deltaMs + (yearsBefore * yearMs);
+      }
+      
+      const cycleProgress = (normalizedDelta % yearMs) / yearMs;
+      return cycleProgress * CANVAS_PX;
+    } else {
+      // Standard calculation for other timeframes
+      const deltaMs = date.getTime() - phase0.getTime();
+      const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
+      
+      let normalizedDelta = deltaMs;
+      if (deltaMs < 0) {
+        const cyclesBefore = Math.ceil(Math.abs(deltaMs) / periodMs);
+        normalizedDelta = deltaMs + (cyclesBefore * periodMs);
+      }
+      
+      const cycleProgress = (normalizedDelta % periodMs) / periodMs;
+      return cycleProgress * CANVAS_PX;
     }
-    
-    const cycleProgress = (normalizedDelta % periodMs) / periodMs;
-    return cycleProgress * CANVAS_PX;
   };
 
   const pixelToDate = (pixel, timeframe) => {
     const phase0 = new Date(timeframe.phase0);
     const cycleProgress = (pixel % CANVAS_PX) / CANVAS_PX;
-    const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
-    const deltaMs = cycleProgress * periodMs;
     
-    return new Date(phase0.getTime() + deltaMs);
+    if (timeframe.name === 'Solar Year') {
+      const yearMs = 365 * 24 * 60 * 60 * 1000;
+      const deltaMs = cycleProgress * yearMs;
+      return new Date(phase0.getTime() + deltaMs);
+    } else {
+      const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
+      const deltaMs = cycleProgress * periodMs;
+      return new Date(phase0.getTime() + deltaMs);
+    }
   };
 
-  // Draw professional quarter-arc wave
+  // Draw professional wave with CORRECT aspect positioning
   const drawProfessionalWave = () => {
     const svg = svgRef.current;
     if (!svg) return;
@@ -248,7 +546,6 @@ const ProfessionalWaveCanvas = ({
 
     // Create professional glow filter
     const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-    
     const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
     filter.setAttribute('id', 'professionalGlow');
     filter.setAttribute('x', '-50%');
@@ -264,8 +561,8 @@ const ProfessionalWaveCanvas = ({
     defs.appendChild(filter);
     svg.appendChild(defs);
 
-    // Draw center axis line (x line)
-    if (displaySettings.xLine) {
+    // Draw center axis line
+    if (lineSettings.centerAxisLine) {
       const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       centerLine.setAttribute('x1', 0);
       centerLine.setAttribute('y1', CENTER_Y);
@@ -277,13 +574,13 @@ const ProfessionalWaveCanvas = ({
       svg.appendChild(centerLine);
     }
 
-    // Draw monthly dividers
-    if (displaySettings.monthlyDividers && activeTimeframe === 'Solar Year') {
-      drawMonthlyDividers(svg, timeframe);
+    // Draw calendar monthly dividers
+    if (lineSettings.monthlyDividers && activeTimeframe === 'Solar Year') {
+      drawCalendarMonthlyDividers(svg, timeframe);
     }
 
-    // Draw main wave dividers
-    if (displaySettings.mainWaveDividers) {
+    // Draw wave dividers
+    if (lineSettings.waveDividers) {
       drawWaveDividers(svg, timeframe);
     }
 
@@ -299,38 +596,45 @@ const ProfessionalWaveCanvas = ({
     }
 
     // Draw nested cycles
-    drawNestedWaves(svg, timeframe);
+    if (lineSettings.nestedWaveLines) {
+      drawNestedWaves(svg, timeframe);
+    }
 
     // Draw current time indicator
-    if (displaySettings.todayLine) {
+    if (lineSettings.todayLine) {
       drawCurrentTimeIndicator(svg, timeframe);
     }
 
     // Draw mouse hover line
-    if (mousePosition && displaySettings.dashedDateTimeLine) {
+    if (mousePosition && lineSettings.dashedDateTimeLine) {
       drawHoverLine(svg);
     }
   };
 
-  // Draw monthly dividers
-  const drawMonthlyDividers = (svg, timeframe) => {
-    const monthPositions = [];
-    for (let month = 0; month < 12; month++) {
-      const monthProgress = month / 12;
-      const monthPixel = monthProgress * CANVAS_PX;
-      
-      // Check if visible
-      const adjustedPixel = monthPixel - (translateX % CANVAS_PX);
-      if (adjustedPixel >= -50 && adjustedPixel <= CANVAS_WIDTH + 50) {
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', adjustedPixel);
-        line.setAttribute('y1', 50);
-        line.setAttribute('x2', adjustedPixel);
-        line.setAttribute('y2', CANVAS_HEIGHT - 50);
-        line.setAttribute('stroke', '#D0D0D0');
-        line.setAttribute('stroke-width', '1');
-        line.setAttribute('opacity', '0.6');
-        svg.appendChild(line);
+  // Draw calendar monthly dividers (1st of each month)
+  const drawCalendarMonthlyDividers = (svg, timeframe) => {
+    const baseYear = 2025;
+    
+    for (let year = baseYear - 2; year <= baseYear + 5; year++) {
+      for (let month = 0; month < 12; month++) {
+        // First day of each calendar month
+        const monthStart = new Date(year, month, 1);
+        const monthPixel = dateToPixel(monthStart, timeframe);
+        
+        // Calculate position relative to current view
+        const adjustedPixel = monthPixel - translateX;
+        
+        if (adjustedPixel >= -50 && adjustedPixel <= CANVAS_WIDTH + 50) {
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', adjustedPixel);
+          line.setAttribute('y1', 50);
+          line.setAttribute('x2', adjustedPixel);
+          line.setAttribute('y2', CANVAS_HEIGHT - 50);
+          line.setAttribute('stroke', '#D0D0D0');
+          line.setAttribute('stroke-width', '1');
+          line.setAttribute('opacity', '0.6');
+          svg.appendChild(line);
+        }
       }
     }
   };
@@ -362,11 +666,14 @@ const ProfessionalWaveCanvas = ({
     }
   };
 
-  // Draw main wave with precise aspect positioning
+  // Draw main wave with PRECISE aspect positioning for Solar Year
   const drawMainWave = (svg, timeframe, offsetX, isMain = false) => {
+    if (!lineSettings.mainWaveLines) return;
+    
     const totalRatio = timeframe.quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
     let currentX = offsetX;
     const aspectPositions = [];
+    const colors = timeframe.colors || ['#FF0080', '#FF4444', '#00FF44', '#0080FF'];
 
     for (let quarter = 0; quarter < 4; quarter++) {
       const ratio = timeframe.quadrantRatios[quarter];
@@ -390,36 +697,36 @@ const ProfessionalWaveCanvas = ({
       }
 
       // Draw the wave segment
-      if (displaySettings.lines) {
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', pathData);
-        path.setAttribute('stroke', '#999999');
-        path.setAttribute('stroke-width', isMain ? timeframe.strokeMain : timeframe.strokeMain * 0.6);
-        path.setAttribute('fill', 'none');
-        svg.appendChild(path);
-      }
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', pathData);
+      path.setAttribute('stroke', '#999999');
+      path.setAttribute('stroke-width', isMain ? timeframe.strokeMain : timeframe.strokeMain * 0.6);
+      path.setAttribute('fill', 'none');
+      svg.appendChild(path);
 
-      // Store CORRECT aspect positions
+      // Store CORRECT aspect positions for Solar Year:
       if (quarter === 0) {
-        // Magenta (0°) - START 
-        aspectPositions.push({ x: currentX, y: CENTER_Y, color: ASPECT_COLORS[0] });
-        // Red (90°) - PEAK 
-        aspectPositions.push({ x: centerX, y: CENTER_Y - radius, color: ASPECT_COLORS[1] });
+        // Magenta (0°) - 21. March (START of year)
+        aspectPositions.push({ x: currentX, y: CENTER_Y, color: colors[0] });
+      } else if (quarter === 1) {
+        // Red (90°) - PEAK (around June solstice)
+        aspectPositions.push({ x: centerX, y: CENTER_Y - radius, color: colors[1] });
       } else if (quarter === 2) {
-        // Green (180°) - CENTER crossing (where wave descends through center)
-        aspectPositions.push({ x: currentX, y: CENTER_Y, color: ASPECT_COLORS[2] });
-        // Blue (270°) - BOTTOM 
-        aspectPositions.push({ x: centerX, y: CENTER_Y + radius, color: ASPECT_COLORS[3] });
+        // Green (180°) - CENTER crossing (around September equinox) 
+        aspectPositions.push({ x: currentX, y: CENTER_Y, color: colors[2] });
+      } else if (quarter === 3) {
+        // Blue (270°) - BOTTOM (around December solstice)
+        aspectPositions.push({ x: centerX, y: CENTER_Y + radius, color: colors[3] });
       }
 
       currentX = endX;
     }
 
-    // Final Magenta (360°)
-    aspectPositions.push({ x: currentX, y: CENTER_Y, color: ASPECT_COLORS[0] });
+    // Final Magenta (360°) - 21. March NEXT YEAR
+    aspectPositions.push({ x: currentX, y: CENTER_Y, color: colors[0] });
 
     // Draw aspect points
-    if (displaySettings.edges) {
+    if (lineSettings.aspectPoints) {
       aspectPositions.forEach(aspect => {
         drawAspectPoint(svg, aspect.x, aspect.y, aspect.color, isMain);
       });
@@ -477,8 +784,6 @@ const ProfessionalWaveCanvas = ({
 
   // Draw scaled nested wave
   const drawScaledWave = (svg, timeframe, offsetX, scalePx, strokeWidth) => {
-    if (!displaySettings.lines) return;
-    
     const totalRatio = timeframe.quadrantRatios.reduce((sum, ratio) => sum + ratio, 0);
     let currentX = offsetX;
     const waveAmplitude = Math.max(15, 30);
@@ -528,7 +833,6 @@ const ProfessionalWaveCanvas = ({
     }
 
     visiblePositions.forEach(indicatorX => {
-      // Today line
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       line.setAttribute('x1', indicatorX);
       line.setAttribute('y1', 50);
@@ -539,7 +843,6 @@ const ProfessionalWaveCanvas = ({
       line.setAttribute('opacity', '0.8');
       svg.appendChild(line);
       
-      // Today dot
       const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       dot.setAttribute('cx', indicatorX);
       dot.setAttribute('cy', CENTER_Y);
@@ -555,7 +858,6 @@ const ProfessionalWaveCanvas = ({
   const drawHoverLine = (svg) => {
     if (!mousePosition) return;
 
-    // Vertical hover line
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', mousePosition.x);
     line.setAttribute('y1', 0);
@@ -576,7 +878,6 @@ const ProfessionalWaveCanvas = ({
     
     setMousePosition({ x, y });
     
-    // Calculate date at hover position
     const timeframe = getActiveTimeframe();
     const hoverPixel = translateX + x;
     const hoverDateCalc = pixelToDate(hoverPixel, timeframe);
@@ -607,7 +908,7 @@ const ProfessionalWaveCanvas = ({
 
   useEffect(() => {
     drawProfessionalWave();
-  }, [activeTimeframe, currentDate, translateX, selectedCycles, displaySettings, mousePosition]);
+  }, [activeTimeframe, currentDate, translateX, selectedCycles, lineSettings, mousePosition]);
 
   return (
     <div className="professional-wave-container">
@@ -623,7 +924,7 @@ const ProfessionalWaveCanvas = ({
       />
       
       {/* Hover date display */}
-      {hoverDate && mousePosition && displaySettings.dashedDateTimeLine && (
+      {hoverDate && mousePosition && lineSettings.dashedDateTimeLine && (
         <div 
           className="hover-date-display"
           style={{
@@ -642,7 +943,7 @@ const ProfessionalWaveCanvas = ({
   );
 };
 
-// Professional Timeline Component
+// Professional Timeline with Calendar Months
 const ProfessionalTimeline = ({ activeTimeframe, translateX, allTimeframes }) => {
   const getTimeframe = () => {
     return allTimeframes?.find(tf => tf.name === activeTimeframe) || 
@@ -650,58 +951,50 @@ const ProfessionalTimeline = ({ activeTimeframe, translateX, allTimeframes }) =>
            TIMEFRAMES[1];
   };
 
-  const generateTimelineMarkers = () => {
+  // Generate calendar-based timeline markers
+  const generateCalendarTimelineMarkers = () => {
     const timeframe = getTimeframe();
     const markers = [];
     const CANVAS_PX = 1460;
     
-    const totalViewWidth = 3000;
-    const cyclesToShow = Math.ceil(totalViewWidth / CANVAS_PX) + 2;
-    const startCycle = Math.floor((translateX - totalViewWidth/2) / CANVAS_PX) - 1;
-
     if (activeTimeframe === 'Solar Year') {
-      for (let cycleIndex = startCycle; cycleIndex < startCycle + cyclesToShow; cycleIndex++) {
-        const cycleStartDate = new Date(timeframe.phase0);
-        cycleStartDate.setFullYear(cycleStartDate.getFullYear() + cycleIndex);
-        
-        // Generate months
+      const baseYear = 2025;
+      
+      for (let year = baseYear - 2; year <= baseYear + 5; year++) {
+        // Calendar months (1st of each month)
         for (let month = 0; month < 12; month++) {
-          const monthDate = new Date(cycleStartDate);
-          monthDate.setMonth(cycleStartDate.getMonth() + month);
+          const monthDate = new Date(year, month, 1);
+          const monthPixel = ((monthDate.getTime() - new Date(`${year}-03-21T00:00:00Z`).getTime()) / (1000 * 60 * 60 * 24) + (year - 2025) * 365) / 365 * CANVAS_PX;
           
-          const deltaMs = monthDate.getTime() - cycleStartDate.getTime();
-          const yearMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
-          const progress = deltaMs / yearMs;
-          const pixelPos = (cycleIndex * CANVAS_PX) + (progress * CANVAS_PX);
-          
-          markers.push({
-            type: 'month',
-            date: monthDate,
-            pixel: pixelPos,
-            label: monthDate.toLocaleDateString('en', { month: 'short' }).toLowerCase(),
-            year: monthDate.getFullYear()
-          });
+          if (monthPixel >= translateX - 200 && monthPixel <= translateX + 1400) {
+            markers.push({
+              type: 'month',
+              date: monthDate,
+              pixel: monthPixel,
+              label: monthDate.toLocaleDateString('en', { month: 'short' }).toLowerCase(),
+              year: monthDate.getFullYear()
+            });
+          }
         }
 
         // Year transition markers
-        const decemberDate = new Date(cycleStartDate.getFullYear(), 11, 31);
-        const decPixel = (cycleIndex + 1) * CANVAS_PX - 50;
+        const yearEnd = new Date(year, 11, 31);
+        const yearStart = new Date(year + 1, 0, 1);
+        
         markers.push({
           type: 'year-end',
-          date: decemberDate,
-          pixel: decPixel,
-          label: `< ${decemberDate.getFullYear()}`,
-          year: decemberDate.getFullYear()
+          date: yearEnd,
+          pixel: ((year - 2024) * 365) / 365 * CANVAS_PX - 50,
+          label: `< ${year}`,
+          year: year
         });
 
-        const januaryDate = new Date(cycleStartDate.getFullYear() + 1, 0, 15);
-        const janPixel = (cycleIndex + 1) * CANVAS_PX + 50;
         markers.push({
           type: 'year-start',
-          date: januaryDate,
-          pixel: janPixel,
-          label: `${januaryDate.getFullYear()} >`,
-          year: januaryDate.getFullYear()
+          date: yearStart,
+          pixel: ((year + 1 - 2025) * 365) / 365 * CANVAS_PX + 50,
+          label: `${year + 1} >`,
+          year: year + 1
         });
       }
     }
@@ -712,7 +1005,7 @@ const ProfessionalTimeline = ({ activeTimeframe, translateX, allTimeframes }) =>
     );
   };
 
-  const markers = generateTimelineMarkers();
+  const markers = generateCalendarTimelineMarkers();
 
   return (
     <div className="professional-timeline">
@@ -730,7 +1023,7 @@ const ProfessionalTimeline = ({ activeTimeframe, translateX, allTimeframes }) =>
         
         {/* Current date indicator on timeline */}
         <div className="current-date-indicator">
-          4.6
+          {new Date().getDate()}.{new Date().getMonth() + 1}
         </div>
       </div>
     </div>
@@ -746,16 +1039,28 @@ function App() {
   const [customTimeframes, setCustomTimeframes] = useState([]);
   const [selectedCycles, setSelectedCycles] = useState(['Lunar Month', 'Solar Day', 'Quarter']);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [showCurveSettings, setShowCurveSettings] = useState(false);
+  const [showCustomCreator, setShowCustomCreator] = useState(false);
   
-  // Display settings matching the screenshot
-  const [displaySettings, setDisplaySettings] = useState({
-    lines: true,
+  // Enhanced line settings
+  const [lineSettings, setLineSettings] = useState({
+    mainWaveLines: true,
+    nestedWaveLines: true,
     dashedDateTimeLine: true,
     monthlyDividers: true,
-    edges: true,
+    waveDividers: true,
+    centerAxisLine: true,
     todayLine: true,
-    mainWaveDividers: true,
-    xLine: true
+    aspectPoints: true
+  });
+
+  // Curve visibility settings
+  const [curveSettings, setCurveSettings] = useState({
+    'Lunar Month': true,
+    'Solar Day': true,
+    'Quarter': true,
+    'Mercury Synodic': false,
+    'Venus Synodic': false
   });
 
   const allTimeframes = [...TIMEFRAMES, ...customTimeframes];
@@ -768,10 +1073,46 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleToggleDisplay = (setting) => {
-    setDisplaySettings(prev => ({
+  const handleToggleLineSettings = (setting) => {
+    setLineSettings(prev => ({
       ...prev,
       [setting]: !prev[setting]
+    }));
+  };
+
+  const handleToggleCurveSettings = (cycleName) => {
+    setCurveSettings(prev => ({
+      ...prev,
+      [cycleName]: !prev[cycleName]
+    }));
+    
+    // Also update selectedCycles
+    setSelectedCycles(prev => 
+      prev.includes(cycleName) 
+        ? prev.filter(name => name !== cycleName)
+        : [...prev, cycleName]
+    );
+  };
+
+  const handleCycleToggle = (cycleName) => {
+    setSelectedCycles(prev => 
+      prev.includes(cycleName) 
+        ? prev.filter(name => name !== cycleName)
+        : [...prev, cycleName]
+    );
+    
+    setCurveSettings(prev => ({
+      ...prev,
+      [cycleName]: !prev[cycleName]
+    }));
+  };
+
+  const handleCreateCustomCycle = (newCycle) => {
+    setCustomTimeframes(prev => [...prev, newCycle]);
+    setSelectedCycles(prev => [...prev, newCycle.name]);
+    setCurveSettings(prev => ({
+      ...prev,
+      [newCycle.name]: true
     }));
   };
 
@@ -808,14 +1149,40 @@ function App() {
     });
   };
 
+  const getAvailableCycles = () => {
+    const activeTimeframePeriod = allTimeframes.find(tf => tf.name === activeTimeframe)?.periodDays || 365;
+    return allTimeframes.filter(tf => tf.periodDays < activeTimeframePeriod && tf.name !== activeTimeframe);
+  };
+
   return (
     <div className="App professional-app">
-      {/* Left Controls Panel */}
-      <LeftControlsPanel
-        displaySettings={displaySettings}
-        onToggleDisplay={handleToggleDisplay}
+      {/* Enhanced Left Controls Panel */}
+      <EnhancedLeftControlsPanel
+        lineSettings={lineSettings}
+        onToggleLineSettings={handleToggleLineSettings}
+        curveSettings={curveSettings}
+        onToggleCurveSettings={handleToggleCurveSettings}
+        onOpenCurveSettings={() => setShowCurveSettings(true)}
         isCollapsed={leftPanelCollapsed}
         onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+      />
+
+      {/* Curve Settings Modal */}
+      <CurveSettingsModal
+        isOpen={showCurveSettings}
+        onClose={() => setShowCurveSettings(false)}
+        availableCycles={getAvailableCycles()}
+        selectedCycles={selectedCycles}
+        onCycleToggle={handleCycleToggle}
+        onEditCycle={() => {}}
+        onCreateCustom={() => setShowCustomCreator(true)}
+      />
+
+      {/* Custom Cycle Creator */}
+      <CustomCycleCreator
+        isOpen={showCustomCreator}
+        onClose={() => setShowCustomCreator(false)}
+        onCreateCycle={handleCreateCustomCycle}
       />
 
       {/* Header */}
@@ -860,7 +1227,7 @@ function App() {
             translateX={translateX}
             selectedCycles={selectedCycles}
             allTimeframes={allTimeframes}
-            displaySettings={displaySettings}
+            lineSettings={lineSettings}
             onDrag={handleDrag}
             onDateChange={handleDateChange}
           />
