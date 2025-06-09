@@ -358,56 +358,23 @@ const ProfessionalWaveCanvas = ({
 
   const getActiveTimeframe = () => {
     return allTimeframes?.find(tf => tf.name === activeTimeframe) || 
-           TIMEFRAMES.find(tf => tf.name === activeTimeframe) || 
-           TIMEFRAMES[1];
+           allTimeframes?.[0];
   };
 
-  // Calculate correct date to pixel for Solar Year (21 Mar to 21 Mar)
+  // Use backend CycleCalculator for precise positioning
   const dateToPixel = (date, timeframe) => {
-    const phase0 = new Date(timeframe.phase0);
+    if (!timeframe?.backendData) return 0;
     
-    if (timeframe.name === 'Solar Year') {
-      // For Solar Year: each wave is exactly 365 days from 21 Mar to 21 Mar
-      const deltaMs = date.getTime() - phase0.getTime();
-      const yearMs = 365 * 24 * 60 * 60 * 1000; // Exactly 365 days
-      
-      let normalizedDelta = deltaMs;
-      if (deltaMs < 0) {
-        const yearsBefore = Math.ceil(Math.abs(deltaMs) / yearMs);
-        normalizedDelta = deltaMs + (yearsBefore * yearMs);
-      }
-      
-      const cycleProgress = (normalizedDelta % yearMs) / yearMs;
-      return cycleProgress * CANVAS_PX;
-    } else {
-      // Standard calculation for other timeframes
-      const deltaMs = date.getTime() - phase0.getTime();
-      const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
-      
-      let normalizedDelta = deltaMs;
-      if (deltaMs < 0) {
-        const cyclesBefore = Math.ceil(Math.abs(deltaMs) / periodMs);
-        normalizedDelta = deltaMs + (cyclesBefore * periodMs);
-      }
-      
-      const cycleProgress = (normalizedDelta % periodMs) / periodMs;
-      return cycleProgress * CANVAS_PX;
-    }
+    const dtStr = date.toISOString();
+    const result = BackendCycleCalculator.datetimeToPixel(dtStr, timeframe.backendData);
+    return result.pixel_x;
   };
 
   const pixelToDate = (pixel, timeframe) => {
-    const phase0 = new Date(timeframe.phase0);
-    const cycleProgress = (pixel % CANVAS_PX) / CANVAS_PX;
+    if (!timeframe?.backendData) return new Date();
     
-    if (timeframe.name === 'Solar Year') {
-      const yearMs = 365 * 24 * 60 * 60 * 1000;
-      const deltaMs = cycleProgress * yearMs;
-      return new Date(phase0.getTime() + deltaMs);
-    } else {
-      const periodMs = timeframe.periodDays * 24 * 60 * 60 * 1000;
-      const deltaMs = cycleProgress * periodMs;
-      return new Date(phase0.getTime() + deltaMs);
-    }
+    const dtStr = BackendCycleCalculator.pixelToDatetime(pixel, timeframe.backendData);
+    return new Date(dtStr);
   };
 
   // Draw professional wave with CORRECT aspect positioning
