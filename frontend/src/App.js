@@ -1,75 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
+import { ApiService, BackendCycleCalculator } from './services/apiService';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Timeframe definitions with real astronomical data
-const TIMEFRAMES = [
-  {
-    name: 'Great Year',
-    periodDays: 25920 * 365.2422,
-    phase0: '2000-03-21T00:00:00Z',
-    strokeMain: 6,
-    quadrantRatios: [6480, 6480, 6480, 6480],
-    editable: false,
-    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF'] // M-R-G-B
-  },
-  {
-    name: 'Solar Year', 
-    periodDays: 365,  // Exactly 365 days (21 Mar to 21 Mar)
-    phase0: '2025-03-21T00:00:00Z',
-    strokeMain: 4,
-    quadrantRatios: [91, 94, 89, 91], // Spring, Summer, Autumn, Winter
+// Convert backend cycle format to frontend format
+const convertBackendCycle = (backendCycle) => {
+  return {
+    name: backendCycle.name,
+    periodDays: backendCycle.period_days,
+    phase0: backendCycle.epoch,
+    strokeMain: backendCycle.base_stroke,
+    quadrantRatios: backendCycle.quadrant_ratios,
     editable: true,
-    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
-  },
-  {
-    name: 'Quarter',
-    periodDays: 91.25,
-    phase0: '2025-03-21T00:00:00Z',
-    strokeMain: 3.5,
-    quadrantRatios: [23, 23, 23, 22],
-    editable: true,
-    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
-  },
-  {
-    name: 'Lunar Month',
-    periodDays: 29.530589,
-    phase0: '2025-03-16T17:10:00Z',
-    strokeMain: 3,
-    quadrantRatios: [7.38, 7.38, 7.38, 7.38],
-    editable: true,
-    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
-  },
-  {
-    name: 'Mercury Synodic',
-    periodDays: 115.88,
-    phase0: '2025-01-15T00:00:00Z',
-    strokeMain: 2.8,
-    quadrantRatios: [29, 29, 29, 28],
-    editable: true,
-    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
-  },
-  {
-    name: 'Venus Synodic',
-    periodDays: 583.92,
-    phase0: '2025-01-10T00:00:00Z',
-    strokeMain: 3.2,
-    quadrantRatios: [146, 146, 146, 145],
-    editable: true,
-    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
-  },
-  {
-    name: 'Solar Day',
-    periodDays: 1.0,
-    phase0: '2025-01-01T06:00:00Z',
-    strokeMain: 2,
-    quadrantRatios: [6, 6, 6, 6],
-    editable: true,
-    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF']
-  }
-];
+    colors: ['#FF0080', '#FF4444', '#00FF44', '#0080FF'], // M-R-G-B standard
+    // Keep backend data for calculations
+    backendData: backendCycle
+  };
+};
 
 // SiNo Logo Component
 const SiNoLogo = () => (
