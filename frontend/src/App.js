@@ -73,8 +73,223 @@ const TIMEFRAMES = [
   }
 ];
 
+// Custom Cycle Creator Component
+const CustomCycleCreator = ({ isOpen, onClose, onCreateCycle }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    periodDays: '',
+    phase0: '',
+    strokeMain: 3,
+    quadrantRatios: [25, 25, 25, 25]
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const newCycle = {
+      ...formData,
+      periodDays: parseFloat(formData.periodDays),
+      quadrantRatios: formData.quadrantRatios.map(r => parseInt(r)),
+      editable: true
+    };
+    onCreateCycle(newCycle);
+    onClose();
+    setFormData({
+      name: '',
+      periodDays: '',
+      phase0: '',
+      strokeMain: 3,
+      quadrantRatios: [25, 25, 25, 25]
+    });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="settings-modal-overlay" onClick={onClose}>
+      <div className="custom-cycle-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Create Custom Cycle</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="cycle-form">
+          <div className="form-group">
+            <label>Cycle Name:</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              required
+              placeholder="e.g., Mars Synodic"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Period (days):</label>
+            <input
+              type="number"
+              step="0.001"
+              value={formData.periodDays}
+              onChange={(e) => setFormData({...formData, periodDays: e.target.value})}
+              required
+              placeholder="e.g., 779.94"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Start Date (Phase 0°):</label>
+            <input
+              type="datetime-local"
+              value={formData.phase0.replace('Z', '')}
+              onChange={(e) => setFormData({...formData, phase0: e.target.value + 'Z'})}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Stroke Width:</label>
+            <input
+              type="range"
+              min="1"
+              max="8"
+              step="0.1"
+              value={formData.strokeMain}
+              onChange={(e) => setFormData({...formData, strokeMain: parseFloat(e.target.value)})}
+            />
+            <span>{formData.strokeMain}px</span>
+          </div>
+
+          <div className="form-group">
+            <label>Quadrant Ratios:</label>
+            <div className="quadrant-inputs">
+              {formData.quadrantRatios.map((ratio, index) => (
+                <input
+                  key={index}
+                  type="number"
+                  value={ratio}
+                  onChange={(e) => {
+                    const newRatios = [...formData.quadrantRatios];
+                    newRatios[index] = parseInt(e.target.value) || 0;
+                    setFormData({...formData, quadrantRatios: newRatios});
+                  }}
+                  placeholder={`Q${index + 1}`}
+                  min="1"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <button type="button" onClick={onClose}>Cancel</button>
+            <button type="submit">Create Cycle</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Cycle Editor Component
+const CycleEditor = ({ isOpen, cycle, onClose, onSaveCycle }) => {
+  const [formData, setFormData] = useState(cycle || {});
+
+  useEffect(() => {
+    setFormData(cycle || {});
+  }, [cycle]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSaveCycle(formData);
+    onClose();
+  };
+
+  if (!isOpen || !cycle) return null;
+
+  return (
+    <div className="settings-modal-overlay" onClick={onClose}>
+      <div className="custom-cycle-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Edit {cycle.name}</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="cycle-form">
+          <div className="form-group">
+            <label>Cycle Name:</label>
+            <input
+              type="text"
+              value={formData.name || ''}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Period (days):</label>
+            <input
+              type="number"
+              step="0.001"
+              value={formData.periodDays || ''}
+              onChange={(e) => setFormData({...formData, periodDays: parseFloat(e.target.value)})}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Start Date (Phase 0°):</label>
+            <input
+              type="datetime-local"
+              value={formData.phase0?.replace('Z', '') || ''}
+              onChange={(e) => setFormData({...formData, phase0: e.target.value + 'Z'})}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Stroke Width:</label>
+            <input
+              type="range"
+              min="1"
+              max="8"
+              step="0.1"
+              value={formData.strokeMain || 3}
+              onChange={(e) => setFormData({...formData, strokeMain: parseFloat(e.target.value)})}
+            />
+            <span>{formData.strokeMain || 3}px</span>
+          </div>
+
+          <div className="form-group">
+            <label>Quadrant Ratios:</label>
+            <div className="quadrant-inputs">
+              {(formData.quadrantRatios || [25,25,25,25]).map((ratio, index) => (
+                <input
+                  key={index}
+                  type="number"
+                  value={ratio}
+                  onChange={(e) => {
+                    const newRatios = [...(formData.quadrantRatios || [25,25,25,25])];
+                    newRatios[index] = parseInt(e.target.value) || 0;
+                    setFormData({...formData, quadrantRatios: newRatios});
+                  }}
+                  placeholder={`Q${index + 1}`}
+                  min="1"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <button type="button" onClick={onClose}>Cancel</button>
+            <button type="submit">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // Settings Modal Component
-const SettingsModal = ({ isOpen, onClose, availableCycles, selectedCycles, onCycleToggle, onCreateCustom }) => {
+const SettingsModal = ({ isOpen, onClose, availableCycles, selectedCycles, onCycleToggle, onCreateCustom, onEditCycle }) => {
   if (!isOpen) return null;
 
   return (
@@ -100,6 +315,15 @@ const SettingsModal = ({ isOpen, onClose, availableCycles, selectedCycles, onCyc
                   <span className="cycle-name">{cycle.name}</span>
                   <span className="cycle-period">({cycle.periodDays.toFixed(1)} days)</span>
                 </label>
+                {cycle.editable && (
+                  <button 
+                    className="edit-cycle-btn"
+                    onClick={() => onEditCycle(cycle)}
+                    title="Edit cycle"
+                  >
+                    ✏️
+                  </button>
+                )}
               </div>
             ))}
           </div>
