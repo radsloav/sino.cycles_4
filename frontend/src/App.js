@@ -974,15 +974,51 @@ function App() {
     'Venus Synodic': false
   });
 
-  const allTimeframes = [...customTimeframes];
-
+  // Load backend cycles and current time data
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentDate(new Date());
-    }, 60000);
-    
+    const loadBackendData = async () => {
+      setLoading(true);
+      try {
+        // Load cycles from backend
+        const cycles = await ApiService.getCycles();
+        const convertedCycles = cycles.map(convertBackendCycle);
+        setBackendCycles(convertedCycles);
+        
+        // Load current time data
+        const currentTime = await ApiService.getCurrentTime();
+        setCurrentTimeData(currentTime);
+        
+        // Update selected cycles to available backend cycles
+        const availableCycles = convertedCycles.map(c => c.name);
+        setSelectedCycles(prev => prev.filter(name => availableCycles.includes(name)));
+        
+      } catch (error) {
+        console.error('Error loading backend data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBackendData();
+  }, []);
+
+  // Update current time and positions every minute
+  useEffect(() => {
+    const updateCurrentTime = async () => {
+      try {
+        const currentTime = await ApiService.getCurrentTime();
+        setCurrentTimeData(currentTime);
+        setCurrentDate(new Date());
+      } catch (error) {
+        console.error('Error updating current time:', error);
+      }
+    };
+
+    const interval = setInterval(updateCurrentTime, 60000); // Every minute
     return () => clearInterval(interval);
   }, []);
+
+  const allTimeframes = [...backendCycles, ...customTimeframes];
 
   const handleToggleLineSettings = (setting) => {
     setLineSettings(prev => ({
