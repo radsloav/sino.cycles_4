@@ -18,30 +18,58 @@ const TIMEFRAMES = [
   {
     name: 'Great Year',
     periodDays: 25920 * 365.2422,
-    phase0: '2000-03-20T00:00:00Z', // Vernal Equinox 2000
+    phase0: '2000-03-21T00:00:00Z', // Vernal Equinox 2000
     strokeMain: 6,
-    quadrantRatios: [6480, 6480, 6480, 6480] // years
+    quadrantRatios: [6480, 6480, 6480, 6480], // years
+    editable: false
   },
   {
     name: 'Solar Year', 
     periodDays: 365.2422,
-    phase0: '2025-03-20T00:00:00Z', // Vernal Equinox 2025
+    phase0: '2025-03-21T00:00:00Z', // Vernal Equinox 2025 (21 March to 21 March)
     strokeMain: 4,
-    quadrantRatios: [93, 92, 89, 91] // days (Spring, Summer, Autumn, Winter)
+    quadrantRatios: [93, 92, 89, 91], // days (Spring, Summer, Autumn, Winter)
+    editable: true
+  },
+  {
+    name: 'Quarter',
+    periodDays: 91.31,  // Average quarter (365.24/4)
+    phase0: '2025-03-21T00:00:00Z', // Spring equinox
+    strokeMain: 3.5,
+    quadrantRatios: [23, 23, 23, 22], // days
+    editable: true
   },
   {
     name: 'Lunar Month',
     periodDays: 29.530589,
     phase0: '2025-03-16T17:10:00Z', // First Quarter March 2025
     strokeMain: 3,
-    quadrantRatios: [7.38, 7.38, 7.38, 7.38] // days
+    quadrantRatios: [7.38, 7.38, 7.38, 7.38], // days
+    editable: true
+  },
+  {
+    name: 'Mercury Synodic',
+    periodDays: 115.88, // Mercury synodic period
+    phase0: '2025-01-15T00:00:00Z', // Superior conjunction
+    strokeMain: 2.8,
+    quadrantRatios: [29, 29, 29, 28], // days
+    editable: true
+  },
+  {
+    name: 'Venus Synodic',
+    periodDays: 583.92, // Venus synodic period
+    phase0: '2025-01-10T00:00:00Z', // Superior conjunction
+    strokeMain: 3.2,
+    quadrantRatios: [146, 146, 146, 145], // days
+    editable: true
   },
   {
     name: 'Solar Day',
     periodDays: 1.0,
     phase0: '2025-01-01T06:00:00Z', // Sunrise epoch
     strokeMain: 2,
-    quadrantRatios: [6, 6, 6, 6] // hours
+    quadrantRatios: [6, 6, 6, 6], // hours
+    editable: true
   }
 ];
 
