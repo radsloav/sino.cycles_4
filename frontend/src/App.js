@@ -944,11 +944,14 @@ function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentVisibleDate, setCurrentVisibleDate] = useState(new Date());
   const [translateX, setTranslateX] = useState(0);
+  const [backendCycles, setBackendCycles] = useState([]);
   const [customTimeframes, setCustomTimeframes] = useState([]);
-  const [selectedCycles, setSelectedCycles] = useState(['Lunar Month', 'Solar Day', 'Quarter']);
+  const [selectedCycles, setSelectedCycles] = useState(['Lunar Month', 'Solar Day']);
   const [showRightSettings, setShowRightSettings] = useState(false);
   const [showCurveSettings, setShowCurveSettings] = useState(false);
   const [showCustomCreator, setShowCustomCreator] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [currentTimeData, setCurrentTimeData] = useState({});
   
   // Enhanced line settings
   const [lineSettings, setLineSettings] = useState({
